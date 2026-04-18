@@ -3,7 +3,7 @@
     import Header from './Header.svelte';
     import MobileSidebar from './MobileSidebar.svelte';
     import MainContent from './MainContent.svelte';
-    import { userRole } from "$lib/stores/user";
+    import { userRole, userName } from "$lib/stores/user";
     import { menus } from "$lib/menus";
     import { page } from "$app/stores";
     import { goto } from "$app/navigation";
@@ -17,6 +17,7 @@
     };
 
     let role = $derived($userRole);
+    let name = $derived($userName);
     let items = $derived(role ? (menus[role] || []) : []);
     let displayRole = $derived(role ? (roleLabels[role] || role) : "Invitado");
 
@@ -36,7 +37,7 @@
     <Sidebar {items} onLogout={logout} />
 
     <div class="flex-grow-1 d-flex flex-column">
-        <Header currentLabel={currentLabel()} {displayRole} />
+        <Header currentLabel={currentLabel()} {displayRole} userName={name} />
 
         <MainContent>
             {@render children()}

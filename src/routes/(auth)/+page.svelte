@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { userRole } from "$lib/stores/user";
+  import { userRole, userName } from "$lib/stores/user";
   import { goto } from "$app/navigation";
 
   // Usamos $state para que Svelte 5 detecte los cambios en los inputs
@@ -32,11 +32,16 @@
       // 1. Guardamos el Token físico en el navegador
       localStorage.setItem("token", data.token);
 
-      // 2. Guardamos el Rol también en localStorage para que persista al recargar (F5)
+      // 2. Guardamos el Nombre del Usuario también en localStorage para mostrarlo en la interfaz
+      const fullName = `${data.first_name} ${data.last_name}`;
+      localStorage.setItem("user_name", fullName);
+
+      // 3. Guardamos el Rol también en localStorage para que persista al recargar (F5)
       localStorage.setItem("user_role", data.role_name);
       
       // 1. Actualizamos el store
       userRole.set(data.role_name);
+      userName.set(fullName); 
 
       // 2. Redirigimos al dashboard correspondiente
       const targetPath = {

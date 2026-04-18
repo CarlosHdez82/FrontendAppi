@@ -1,5 +1,10 @@
 <script lang="ts">
-    let { currentLabel, displayRole } = $props();
+    // Definimos los tipos de las props que recibe el componente
+    let { currentLabel, displayRole, userName } = $props<{
+        currentLabel: string;
+        displayRole: string;
+        userName: string | null;
+    }>();
 </script>
 
 <nav class="navbar bg-white border-bottom w-100 shadow-sm">
@@ -20,8 +25,11 @@
         </div>
 
         <div class="d-flex align-items-center">
-            <span class="text-muted small d-none d-sm-inline me-2">{displayRole}</span>
-            <i class="bi bi-person-circle fs-4 text-secondary"></i>
+            <div class="text-end me-3">
+                <div class="fw-bold small">{userName || "Usuario"}</div>
+                <small class="text-muted d-block">{displayRole}</small>
+            </div>
+            <i class="bi bi-person-circle fs-3 text-secondary"></i>
         </div>
     </div>
 </nav>
