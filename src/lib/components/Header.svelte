@@ -25,9 +25,9 @@
         </div>
 
         <div class="d-flex align-items-center">
-            <div class="text-end me-3">
-                <div class="fw-bold small">{userName || "Usuario"}</div>
-                <small class="text-muted d-block">{displayRole}</small>
+            <div class="text-end me-2" style="max-width: 150px;">
+                <div class="fw-bold small text-truncate">{userName || "Usuario"}</div>
+                <small class="text-muted d-block small">{displayRole}</small>
             </div>
             <i class="bi bi-person-circle fs-3 text-secondary"></i>
         </div>

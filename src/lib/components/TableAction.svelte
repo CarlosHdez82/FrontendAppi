@@ -2,9 +2,9 @@
     let { onEdit, onDelete, itemName = "" } = $props();
 </script>
 
-<div class="btn-group">
+<div class="btn-group flex-nowrap" role="group">
     <button 
-        class="btn btn-sm btn-light text-primary border shadow-sm" 
+        class="btn btn-sm btn-light text-primary border shadow-sm px-2" 
         onclick={onEdit}
         data-bs-toggle="modal" 
         data-bs-target="#modalPrincipal" 

@@ -23,10 +23,9 @@
 
 <style>
     thead th { 
-        font-size: 0.85rem; 
+        font-size: 0.8rem; 
         text-transform: uppercase; 
-        letter-spacing: 0.5px; 
-        padding-top: 1rem;
-        padding-bottom: 1rem;
+        letter-spacing: 0.5px;
+        padding: 0.75rem 1rem;
     }
 </style>

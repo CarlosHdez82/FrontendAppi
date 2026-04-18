@@ -33,7 +33,7 @@
     };
 </script>
 
-<div class="d-flex vh-100 overflow-hidden">
+<div class="d-flex vh-100 overflow-auto">
     <Sidebar {items} onLogout={logout} />
 
     <div class="flex-grow-1 d-flex flex-column">
