@@ -4,6 +4,7 @@
     import LogoutButton from './LogoutButton.svelte';
 
     let { items, onLogout } = $props();
+    
 </script>
 
 <div class="offcanvas offcanvas-start text-white" tabindex="-1" id="offcanvasSidebar" aria-labelledby="offcanvasSidebarLabel">
@@ -25,7 +26,15 @@
 
 <style>
     .offcanvas {
-        background-color: #222F56; /* Color primario de Bootstrap */
-        width: 200px;
+        background-color: #222F56;
+        /* Forzamos el ancho para que no ocupe casi toda la pantalla en móvil */
+        width: 250px !important; 
+        max-width: 75% !important; /* Nunca más del 75% del ancho del dispositivo */
+        border-right: 2px solid #F3B105; /* Un detalle estético con el color de CUL */
+    }
+
+    .offcanvas-body {
+        padding: 0; /* Asegura que la lista NavItem toque los bordes */
+        overflow-x: hidden;
     }
 </style>

@@ -33,10 +33,10 @@
     };
 </script>
 
-<div class="d-flex vh-100 overflow-auto">
+<div class="d-flex vh-100 overflow-hidden">
     <Sidebar {items} onLogout={logout} />
 
-    <div class="flex-grow-1 d-flex flex-column">
+    <div class="flex-grow-1 d-flex flex-column min-w-0">
         <Header currentLabel={currentLabel()} {displayRole} userName={name} />
 
         <MainContent>
