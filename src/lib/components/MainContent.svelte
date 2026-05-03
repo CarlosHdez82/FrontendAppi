@@ -11,6 +11,8 @@
 <style>
     /* Asegura que el área de contenido ocupe el espacio restante */
     main {
-        min-height: 0; 
+        min-height: 0;
+        scrollbar-width: thin;
+        scrollbar-color: #F3B105 transparent;
     }
 </style>

@@ -33,12 +33,19 @@
     };
 </script>
 
+<!-- Estructura principal con corrección de scroll -->
 <div class="d-flex vh-100 overflow-hidden">
+    <!-- Sidebar Escritorio -->
     <Sidebar {items} onLogout={logout} />
 
-    <div class="flex-grow-1 d-flex flex-column min-w-0">
+    <!-- 
+        Agregamos style="width: 0;" o min-width: 0; 
+        Esto permite que los hijos (como las tablas) manejen su propio overflow horizontal.
+    -->
+    <div class="flex-grow-1 d-flex flex-column min-w-0" style="width: 0;">
         <Header currentLabel={currentLabel()} {displayRole} userName={name} />
 
+        <!-- El MainContent debe permitir el scroll vertical del contenido general -->
         <MainContent>
             {@render children()}
         </MainContent>
