@@ -9,7 +9,7 @@
     </div>
     {#if buttonText}
         <button 
-            class="btn btn-primary shadow-sm"
+            class="btn shadow-sm"
             data-bs-toggle="modal" 
             data-bs-target="#modalPrincipal"
             onclick={onButtonClick}
@@ -18,3 +18,10 @@
         </button>
     {/if}
 </div>
+
+<style>
+    .btn {
+        background-color: #222F56; /* Color primario de Bootstrap */
+        color: white;
+    }
+</style>

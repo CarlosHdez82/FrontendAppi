@@ -13,7 +13,7 @@
     // Lógica de roles
     const roleLabels: Record<string, string> = {
         "admi": "Administrador", "faculty": "Coordinador",
-        "teacher": "Docente", "student": "Estudiante"
+        "teacher": "Docente"
     };
 
     let role = $derived($userRole);

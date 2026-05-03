@@ -8,7 +8,6 @@ export type Menus = {
   admi: MenuItem[];
   faculty: MenuItem[];
   teacher: MenuItem[];
-  student: MenuItem[];
 };
 
 export const menus: Menus = {
@@ -35,11 +34,10 @@ export const menus: Menus = {
   ],
   teacher: [
     { icon: "bi bi-speedometer2", label: "Dashboard", href: "/teacher/dashboard" },
+    { icon: "bi bi-clipboard2", label: "Programas", href: "/teacher/programas" },
+    { icon: "bi bi-book", label: "Materias", href: "/teacher/materias" },
+    { icon: "bi bi-calendar", label: "Periodos", href: "/teacher/periodos" },
     { icon: "bi bi-clock", label: "Disponibilidad", href: "/teacher/disponibilidad" },
     { icon: "bi bi-calendar-week", label: "Horarios", href: "/teacher/horarios" }
-  ],
-  student: [
-    { icon: "bi bi-speedometer2", label: "Dashboard", href: "/student/dashboard" },
-    { icon: "bi bi-calendar-week", label: "Horarios", href: "/student/horarios" }
   ]
 };

@@ -5,8 +5,7 @@
     const config: Record<number, {label: string, icon: string, color: string}> = {
         1: { label: 'Admin', icon: 'bi-shield-lock', color: 'text-dark bg-light' },
         2: { label: 'Coordinación', icon: 'bi-person-badge', color: 'text-primary bg-primary-subtle' },
-        3: { label: 'Docente', icon: 'bi-person-workspace', color: 'text-secondary bg-secondary-subtle' },
-        4: { label: 'Estudiante', icon: 'bi-mortarboard', color: 'text-success bg-success-subtle' }
+        3: { label: 'Docente', icon: 'bi-person-workspace', color: 'text-secondary bg-secondary-subtle' }
     };
 
     // Fallback por si llega un ID no definido

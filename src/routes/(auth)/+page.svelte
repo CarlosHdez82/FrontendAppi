@@ -47,8 +47,7 @@
       const targetPath = {
         "admi": "/admi/dashboard",
         "faculty": "/faculty/dashboard",
-        "teacher": "/teacher/dashboard",
-        "student": "/student/dashboard"
+        "teacher": "/teacher/dashboard"
       }[data.role_name];
 
       if (targetPath) {

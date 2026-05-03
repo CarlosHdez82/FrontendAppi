@@ -8,19 +8,19 @@
     {#if role === 'admi'}
         <DashboardCard title="Usuarios" value={data.usuarios} icon="bi-people" color="primary" link="/admi/usuarios" linkText="Gestionar" />
         <DashboardCard title="Facultades" value={data.facultades} icon="bi-building" color="success" link="/admi/facultades" linkText="Ver" />
-        <DashboardCard title="Docentes" value={data.docentes} icon="bi-person-badge" color="info" link="/admi/docentes" linkText="Asignar" />
-        <DashboardCard title="Horarios" value={data.horarios} icon="bi-calendar-week" color="warning" link="/admi/horarios" linkText="Revisar" />
+        <DashboardCard title="Programas" value={data.programas} icon="bi-journal-bookmark" color="info" link="/admi/programas" linkText="Ver" />
+        <DashboardCard title="Docentes" value={data.docentes} icon="bi-person-badge" color="warning" link="/admi/docentes" linkText="Asignar" />
     
     {:else if role === 'faculty'}
-        <DashboardCard title="Facultades" value={data.facultades} icon="bi-building" color="success" link="/admi/facultades" linkText="Ver" />
+        <DashboardCard title="Facultades" value={data.facultades} icon="bi-building" color="primary" link="/admi/facultades" linkText="Ver" />
+        <DashboardCard title="Programas" value={data.programas} icon="bi-journal-bookmark" color="success" link="/admi/programas" linkText="Ver" />
         <DashboardCard title="Docentes" value={data.docentes} icon="bi-person-badge" color="info" link="/admi/docentes" linkText="Asignar" />
-        <DashboardCard title="Horarios" value={data.horarios} icon="bi-calendar-week" color="warning" link="/admi/horarios" linkText="Revisar" />
+        <DashboardCard title="Materias" value={data.materias} icon="bi-journal-text" color="warning" link="/admi/materias" linkText="Ver" />
     
     {:else if role === 'teacher'}
-        <DashboardCard title="Mis Horarios" value={data.mis_horarios} icon="bi-calendar-check" color="primary" link="/teacher/horarios" linkText="Ver mi agenda" />
-        <DashboardCard title="Tutorías Hoy" value={data.tutorias_pendientes} icon="bi-clock-history" color="warning" link="/teacher/tutorias" linkText="Atender" />
-    
-    {:else if role === 'student'}
-        <DashboardCard title="Clases Hoy" value={data.clases_hoy} icon="bi-book" color="info" link="/student/clases" linkText="Ver aula" />
+        <DashboardCard title="Programas" value={data.programas} icon="bi-journal-bookmark" color="primary" link="/admi/programas" linkText="Ver" />
+        <DashboardCard title="Materias" value={data.materias} icon="bi-journal-text" color="success" link="/admi/materias" linkText="Ver" />
+        <DashboardCard title="Horarios" value={data.horarios} icon="bi-calendar-week" color="info" link="/admi/horarios" linkText="Revisar" />
+        <DashboardCard title="Disponibilidad" value={data.horarios} icon="bi-clock" color="warning" link="/teacher/disponibilidad" linkText="Configurar" />
     {/if}
 </div>

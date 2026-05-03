@@ -5,9 +5,12 @@
     let { items, onLogout } = $props();
 </script>
 
-<nav class="navbar navbar-light bg-primary text-white flex-column vh-100 d-none d-md-flex" style="width: 200px;">
-    <NavLogo />
-    <hr class="border-light w-100" />
+<nav class="navbar navbar-light text-white flex-column vh-100 d-none d-md-flex p-0">
+    <div class="w-100 flex-column p-2" style="background-color: #F3B105;">
+        <NavLogo/>
+    </div>
+
+    <hr class="border-light" />
     <ul class="navbar-nav flex-column w-100 mb-auto gap-4 ps-3">
         {#each items as item}
             <NavItem {item} />
@@ -15,3 +18,10 @@
     </ul>
     <LogoutButton action={onLogout} />
 </nav>
+
+<style>
+    .navbar {
+        background-color: #222F56; /* Color primario de Bootstrap */
+        width: 200px;
+    }
+</style>
