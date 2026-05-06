@@ -49,7 +49,7 @@
                 <div class="card border-0 shadow-sm p-4 h-100">
                     <h5 class="fw-bold mb-3 text-secondary">Control de Periodo</h5>
                     <div class="d-flex align-items-center">
-                        <div class="badge bg-dark p-2 me-3">2026-1</div>
+                        <a href="/admi/periodos" class="badge bg-dark p-2 me-3">2026-1</a>
                         <p class="mb-0 text-muted small">Estado: <strong>Activo para asignación</strong></p>
                     </div>
                 </div>
