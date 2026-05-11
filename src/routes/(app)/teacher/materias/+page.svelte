@@ -1,254 +1,135 @@
-<!-- <script lang="ts">
-    import { onMount } from 'svelte';
-    import PageHeader from "$lib/components/PageHeader.svelte";
-    import DataTable from "$lib/components/DataTable.svelte";
-    import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
-    import TableAction from "$lib/components/TableAction.svelte";
-    import FormModal from "$lib/components/FormModal.svelte";
-    import ConfirmDeleteModal from "$lib/components/ConfirmDeleteModal.svelte";
-
-    let materias = $state([]);
-    let programas = $state([]);
-    let cargando = $state(true);
-    let editando = $state(false);
-    let idSeleccionado = $state(null);
-    let nombreBorrar = $state("");
-
-    let formulario = $state({
-        name: "",
-        credits: 1,
-        program_id: 0
-    });
-
-    const headers = [
-        { label: "Materia", class: "ps-4" },
-        { label: "Créditos" },
-        { label: "Programa" },
-        { label: "Acciones", class: "text-center" }
-    ];
-
-    async function cargarTodo() {
-        const token = localStorage.getItem('token');
-        const h = { "Authorization": `Bearer ${token}` };
-        try {
-            const [rM, rP] = await Promise.all([
-                fetch("https://gestion-de-horarios-final.onrender.com/get_subjects", { headers: h }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_programs", { headers: h })
-            ]);
-            if (rM.ok) materias = await rM.json();
-            if (rP.ok) programas = await rP.json();
-        } catch (e) { console.error("Error CUL Materias"); }
-        finally { cargando = false; }
-    }
-
-    function prepararNuevo() {
-        editando = false; idSeleccionado = null;
-        formulario = { name: "", credits: 1, program_id: 0 };
-    }
-
-    function prepararEdicion(m: any) {
-        editando = true; idSeleccionado = m.subject_id;
-        formulario = { ...m };
-    }
-
-    async function guardar() {
-        const url = editando ? `https://gestion-de-horarios-final.onrender.com/update_subject/${idSeleccionado}` : "https://gestion-de-horarios-final.onrender.com/create_subject";
-        const res = await fetch(url, {
-            method: editando ? "PUT" : "POST",
-            headers: { "Authorization": `Bearer ${localStorage.getItem('token')}`, "Content-Type": "application/json" },
-            body: JSON.stringify(formulario)
-        });
-        if (res.ok) await cargarTodo();
-    }
-
-    async function eliminar() {
-        const res = await fetch(`https://gestion-de-horarios-final.onrender.com/delete_subject/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: { "Authorization": `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (res.ok) await cargarTodo();
-    }
-
-    onMount(cargarTodo);
-</script>
-
-<PageHeader 
-    title="Materias CUL" 
-    subtitle="Catálogo de Asignaturas" 
-    buttonText="Nueva Materia" 
-    onButtonClick={prepararNuevo} 
-/>
-
-{#if cargando}
-    <LoadingSpinner />
-{:else}
-    <DataTable {headers}>
-        {#each materias as m}
-            <tr>
-                <td class="ps-4 fw-bold text-primary">{m.name}</td>
-                <td><span class="badge bg-secondary">{m.credits} Créditos</span></td>
-                <td>{m.program_name}</td>
-                <td class="text-center">
-                    <TableAction 
-                        itemName={m.name}
-                        onEdit={() => prepararEdicion(m)}
-                        onDelete={() => { idSeleccionado = m.subject_id; nombreBorrar = m.name; }}
-                    />
-                </td>
-            </tr>
-        {/each}
-    </DataTable>
-{/if}
-
-<FormModal id="modalPrincipal" title="Materia" isEdit={editando} onSave={guardar}>
-    <div class="row g-3 text-start">
-        <div class="col-12">
-            <label for="sub_name" class="form-label small fw-bold">Nombre de la Materia</label>
-            <input id="sub_name" type="text" class="form-control" bind:value={formulario.name} required>
-        </div>
-        <div class="col-6">
-            <label for="sub_credits" class="form-label small fw-bold">Créditos</label>
-            <input id="sub_credits" type="number" class="form-control" min="1" max="10" bind:value={formulario.credits} required>
-        </div>
-        <div class="col-6">
-            <label for="sub_prog" class="form-label small fw-bold">Programa</label>
-            <select id="sub_prog" class="form-select" bind:value={formulario.program_id} required>
-                <option value={0} disabled>Seleccionar...</option>
-                {#each programas as p}
-                    <option value={p.id}>{p.name}</option>
-                {/each}
-            </select>
-        </div>
-    </div>
-</FormModal>
-
-<ConfirmDeleteModal id="modalEliminar" itemName={nombreBorrar} onDelete={eliminar} /> -->
-
 <script lang="ts">
     import { onMount } from 'svelte';
-    import PageHeader from "$lib/components/PageHeader.svelte";
-    import DataTable from "$lib/components/DataTable.svelte";
-    import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
-    import TableAction from "$lib/components/TableAction.svelte";
-    import FormModal from "$lib/components/FormModal.svelte";
-    import ConfirmDeleteModal from "$lib/components/ConfirmDeleteModal.svelte";
+    import SubjectsCard from '$lib/components/SubjectsCard.svelte';
+    import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
-    // --- ESTADOS ---
-    let materias = $state([]);
-    let programas = $state([]);
+    const API = "https://gestion-de-horarios-1.onrender.com";
+
+    let materias = $state<any[]>([]);
+    let periodos = $state<any[]>([]);
+    let periodoSeleccionado = $state<number | null>(null);
     let cargando = $state(true);
-    let editando = $state(false);
-    let idSeleccionado = $state(null);
-    let nombreBorrar = $state("");
+    let filtro = $state('');
 
-    let formulario = $state({
-        name: "",
-        credits: 1,
-        program_id: 0
+    let materiasFiltradas = $derived(
+        materias.filter(m => m.nombre.toLowerCase().includes(filtro.toLowerCase()))
+    );
+
+    const getHeaders = () => ({
+        "Authorization": `Bearer ${localStorage.getItem('token')}`
     });
 
-    const headers = [
-        { label: "Materia", class: "ps-4" },
-        { label: "Créditos" },
-        { label: "Programa" },
-        { label: "Acciones", class: "text-center" }
-    ];
+    const teacherId = () => localStorage.getItem('user_id');
 
-    async function cargarTodo() {
-        const token = localStorage.getItem('token');
-        const h = { "Authorization": `Bearer ${token}` };
+    async function cargarPeriodos() {
+        const res = await fetch(`${API}/academic-periods/`, { headers: getHeaders() });
+        if (res.ok) {
+            periodos = await res.json();
+            const activo = periodos.find(p => p.is_active);
+            if (activo) periodoSeleccionado = activo.id;
+        }
+    }
+
+    async function cargarMaterias() {
+        if (!periodoSeleccionado || !teacherId()) return;
+        cargando = true;
         try {
-            const [rM, rP] = await Promise.all([
-                fetch("https://gestion-de-horarios-final.onrender.com/get_subjects", { headers: h }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_programs", { headers: h })
-            ]);
-            if (rM.ok) materias = await rM.json();
-            if (rP.ok) programas = await rP.json();
-        } catch (e) { console.error("Error CUL Materias"); }
-        finally { cargando = false; }
+            const res = await fetch(`${API}/schedules/`, { headers: getHeaders() });
+            if (res.ok) {
+                const todos = await res.json();
+                // Filtrar horarios de este docente y periodo
+                const misHorarios = todos.filter((h: any) =>
+                    String(h.teacher_id) === teacherId() &&
+                    h.period_id === periodoSeleccionado
+                );
+
+                // Deduplicar por materia y armar el formato para SubjectsCard
+                const materiasMap = new Map();
+                misHorarios.forEach((h: any) => {
+                    if (!materiasMap.has(h.subject_id)) {
+                        materiasMap.set(h.subject_id, {
+                            id: h.subject_id,
+                            nombre: h.subject_name || 'Sin nombre',
+                            codigo: h.subject_code || '---',
+                            programa: h.period_name || '',
+                            intensidad: 0,
+                            grupo: h.group_code || 'A',
+                            bloques: []
+                        });
+                    }
+                    // Acumular bloques y calcular intensidad
+                    const mat = materiasMap.get(h.subject_id);
+                    mat.bloques.push(`${h.day_of_week} ${h.block_label}`);
+                    mat.intensidad += 2; // cada bloque = 2 horas
+                });
+
+                materias = Array.from(materiasMap.values());
+            }
+        } catch (e) {
+            console.error("Error:", e);
+        } finally {
+            cargando = false;
+        }
     }
 
-    function prepararNuevo() {
-        editando = false; idSeleccionado = null;
-        formulario = { name: "", credits: 1, program_id: 0 };
-    }
+    $effect(() => {
+        if (periodoSeleccionado) cargarMaterias();
+    });
 
-    function prepararEdicion(m: any) {
-        editando = true; idSeleccionado = m.subject_id;
-        formulario = { ...m };
-    }
-
-    async function guardar() {
-        const url = editando ? `https://gestion-de-horarios-final.onrender.com/update_subject/${idSeleccionado}` : "https://gestion-de-horarios-final.onrender.com/create_subject";
-        const res = await fetch(url, {
-            method: editando ? "PUT" : "POST",
-            headers: { "Authorization": `Bearer ${localStorage.getItem('token')}`, "Content-Type": "application/json" },
-            body: JSON.stringify(formulario)
-        });
-        if (res.ok) await cargarTodo();
-    }
-
-    async function eliminar() {
-        const res = await fetch(`https://gestion-de-horarios-final.onrender.com/delete_subject/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: { "Authorization": `Bearer ${localStorage.getItem('token')}` }
-        });
-        if (res.ok) await cargarTodo();
-    }
-
-    onMount(cargarTodo);
+    onMount(async () => {
+        await cargarPeriodos();
+    });
 </script>
 
-<PageHeader 
-    title="Materias CUL" 
-    subtitle="Catálogo de Asignaturas" 
-    buttonText="Nueva Materia" 
-    onButtonClick={prepararNuevo} 
-/>
-
-{#if cargando}
-    <LoadingSpinner />
-{:else}
-    <!-- Cambio: Pasamos el array a 'data' para habilitar el buscador del componente -->
-    <DataTable {headers} data={materias}>
-        {#snippet rowTemplate(m)}
-            <tr>
-                <td class="ps-4 fw-bold text-primary">{m.name}</td>
-                <td><span class="badge bg-secondary">{m.credits} Créditos</span></td>
-                <td>{m.program_name}</td>
-                <td class="text-center">
-                    <TableAction 
-                        itemName={m.name}
-                        onEdit={() => prepararEdicion(m)}
-                        onDelete={() => { idSeleccionado = m.subject_id; nombreBorrar = m.name; }}
-                    />
-                </td>
-            </tr>
-        {/snippet}
-    </DataTable>
-{/if}
-
-<FormModal id="modalPrincipal" title="Materia" isEdit={editando} onSave={guardar}>
-    <div class="row g-3 text-start">
-        <div class="col-12">
-            <label for="sub_name" class="form-label small fw-bold">Nombre de la Materia</label>
-            <input id="sub_name" type="text" class="form-control" bind:value={formulario.name} required>
+<div class="container-fluid py-4">
+    <!-- Encabezado y controles -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold mb-1">Mis Materias</h2>
+            <p class="text-muted mb-0">Carga académica del periodo seleccionado.</p>
         </div>
-        <div class="col-6">
-            <label for="sub_credits" class="form-label small fw-bold">Créditos</label>
-            <input id="sub_credits" type="number" class="form-control" min="1" max="10" bind:value={formulario.credits} required>
-        </div>
-        <div class="col-6">
-            <label for="sub_prog" class="form-label small fw-bold">Programa</label>
-            <select id="sub_prog" class="form-select" bind:value={formulario.program_id} required>
-                <option value={0} disabled>Seleccionar...</option>
-                {#each programas as p}
-                    <!-- Nota: Usamos p.id para la vinculación con program_id -->
-                    <option value={p.id}>{p.name}</option>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <!-- Selector de periodo -->
+            <select class="form-select form-select-sm shadow-sm" style="min-width: 160px;"
+                    bind:value={periodoSeleccionado}>
+                <option value={null} disabled>Selecciona periodo...</option>
+                {#each periodos as p}
+                    <option value={p.id}>{p.name}{p.is_active ? ' (activo)' : ''}</option>
                 {/each}
             </select>
+            <!-- Buscador -->
+            <div class="input-group input-group-sm shadow-sm rounded-pill overflow-hidden" style="min-width: 240px;">
+                <span class="input-group-text bg-white border-end-0">
+                    <i class="bi bi-search text-muted"></i>
+                </span>
+                <input type="text" class="form-control border-start-0"
+                       placeholder="Buscar materia..."
+                       bind:value={filtro} />
+            </div>
         </div>
     </div>
-</FormModal>
 
-<ConfirmDeleteModal id="modalEliminar" itemName={nombreBorrar} onDelete={eliminar} />
+    <!-- Contenido -->
+    {#if cargando}
+        <LoadingSpinner />
+    {:else if materiasFiltradas.length > 0}
+        <div class="row g-4">
+            {#each materiasFiltradas as materia (materia.id)}
+                <div class="col-12 col-md-6 col-xl-4">
+                    <SubjectsCard {materia} />
+                </div>
+            {/each}
+        </div>
+    {:else if materias.length === 0}
+        <div class="text-center py-5">
+            <i class="bi bi-journal-x fs-1 text-muted"></i>
+            <p class="mt-3 text-muted">No tienes materias asignadas para este periodo.</p>
+            <small class="text-muted">Contacta a tu coordinador si crees que esto es un error.</small>
+        </div>
+    {:else}
+        <div class="text-center py-5">
+            <i class="bi bi-search fs-1 text-muted"></i>
+            <p class="mt-3 text-muted">No encontramos materias que coincidan con "{filtro}"</p>
+        </div>
+    {/if}
+</div>

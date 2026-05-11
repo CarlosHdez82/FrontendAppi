@@ -1,356 +1,191 @@
-<!-- <script lang="ts">
-    import { onMount } from 'svelte';
-    import PageHeader from "$lib/components/PageHeader.svelte";
-    import DataTable from "$lib/components/DataTable.svelte";
-    import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
-    import TableAction from "$lib/components/TableAction.svelte";
-    import FormModal from "$lib/components/FormModal.svelte";
-    import ConfirmDeleteModal from "$lib/components/ConfirmDeleteModal.svelte";
-
-    // --- ESTADOS ---
-    let lista = $state([]);
-    let docentes = $state([]);
-    let periodos = $state([]);
-    let cargando = $state(true);
-    let editando = $state(false);
-    let idSeleccionado = $state(null);
-    let nombreDocenteBorrar = $state("");
-
-    const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-
-    let formulario = $state({
-        teacher_id: "", 
-        period_id: "", 
-        day_of_week: "Lunes",
-        start_time: "07:00", 
-        end_time: "12:00"
-    });
-
-    const headers = [
-        { label: "Docente", class: "ps-4" },
-        { label: "Día" },
-        { label: "Horario (Inicio - Fin)" },
-        { label: "Periodo" },
-        { label: "Acciones", class: "text-end pe-4" }
-    ];
-
-    const getHeaders = () => ({
-        "Authorization": `Bearer ${localStorage.getItem('token')}`,
-        "Content-Type": "application/json"
-    });
-
-    async function cargarDatos() {
-        cargando = true;
-        try {
-            const [resA, resD, resP] = await Promise.all([
-                fetch("https://gestion-de-horarios-final.onrender.com/get_availabilities", { headers: getHeaders() }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_teachers", { headers: getHeaders() }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_periods", { headers: getHeaders() })
-            ]);
-            if (resA.ok) lista = await resA.json();
-            if (resD.ok) docentes = await resD.json();
-            if (resP.ok) periodos = await resP.json();
-        } catch (e) { console.error("Error CUL Availability"); }
-        finally { cargando = false; }
-    }
-
-    function prepararNuevo() {
-        editando = false; idSeleccionado = null;
-        formulario = { teacher_id: "", period_id: "", day_of_week: "Lunes", start_time: "07:00", end_time: "12:00" };
-    }
-
-    function prepararEdicion(item: any) {
-        editando = true; idSeleccionado = item.id;
-        formulario = {
-            teacher_id: item.teacher_id,
-            period_id: item.period_id,
-            day_of_week: item.day_of_week,
-            start_time: item.start_time.substring(0,5),
-            end_time: item.end_time.substring(0,5)
-        };
-    }
-
-    async function guardar() {
-        const url = editando ? `https://gestion-de-horarios-final.onrender.com/update_availability/${idSeleccionado}` : "https://gestion-de-horarios-final.onrender.com/create_availability";
-        const res = await fetch(url, {
-            method: editando ? "PUT" : "POST",
-            headers: getHeaders(),
-            body: JSON.stringify(formulario)
-        });
-        if (res.ok) await cargarDatos();
-    }
-
-    async function eliminar() {
-        const res = await fetch(`https://gestion-de-horarios-final.onrender.com/delete_availability/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: getHeaders()
-        });
-        if (res.ok) await cargarDatos();
-    }
-
-    onMount(cargarDatos);
-</script>
-
-<PageHeader 
-    title="Disponibilidad Docente" 
-    subtitle="Gestión de tiempos académicos - Universidad CUL" 
-    buttonText="Agregar Disponibilidad" 
-    onButtonClick={prepararNuevo} 
-/>
-
-{#if cargando}
-    <LoadingSpinner />
-{:else}
-    <DataTable {headers}>
-        {#each lista as item}
-            <tr>
-                <td class="ps-4">
-                    <div class="fw-bold text-dark">{item.teacher_name}</div>
-                </td>
-                <td>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3">
-                        {item.day_of_week}
-                    </span>
-                </td>
-                <td>
-                    <span class="text-muted"><i class="bi bi-clock me-1"></i> {item.start_time} - {item.end_time}</span>
-                </td>
-                <td><small class="fw-medium text-secondary">{item.period_name}</small></td>
-                <td class="text-end pe-4">
-                    <TableAction 
-                        itemName={`Franja de ${item.teacher_name}`}
-                        onEdit={() => prepararEdicion(item)}
-                        onDelete={() => { idSeleccionado = item.id; nombreDocenteBorrar = item.teacher_name; }}
-                    />
-                </td>
-            </tr>
-        {/each}
-    </DataTable>
-{/if}
-
-<FormModal id="modalPrincipal" title="Disponibilidad" isEdit={editando} onSave={guardar}>
-    <div class="row g-3 text-start">
-        <div class="col-12">
-            <label for="f_teacher" class="form-label small fw-bold">DOCENTE</label>
-            <select id="f_teacher" class="form-select" bind:value={formulario.teacher_id} required>
-                <option value="" disabled>Seleccione un docente...</option>
-                {#each docentes as d}
-                    <option value={d.id}>{d.first_name} {d.last_name}</option>
-                {/each}
-            </select>
-        </div>
-
-        <div class="col-12">
-            <label for="f_period" class="form-label small fw-bold">PERIODO ACADÉMICO</label>
-            <select id="f_period" class="form-select" bind:value={formulario.period_id} required>
-                <option value="" disabled>Seleccione periodo...</option>
-                {#each periodos as p}
-                    <option value={p.id}>{p.name}</option>
-                {/each}
-            </select>
-        </div>
-
-        <div class="col-12">
-            <label for="f_day" class="form-label small fw-bold">DÍA DE LA SEMANA</label>
-            <select id="f_day" class="form-select" bind:value={formulario.day_of_week} required>
-                {#each dias as dia}
-                    <option value={dia}>{dia}</option>
-                {/each}
-            </select>
-        </div>
-
-        <div class="col-6">
-            <label for="f_start" class="form-label small fw-bold">HORA INICIO</label>
-            <input type="time" id="f_start" class="form-control" bind:value={formulario.start_time} required />
-        </div>
-        <div class="col-6">
-            <label for="f_end" class="form-label small fw-bold">HORA FIN</label>
-            <input type="time" id="f_end" class="form-control" bind:value={formulario.end_time} required />
-        </div>
-    </div>
-</FormModal>
-
-<ConfirmDeleteModal 
-    id="modalEliminar" 
-    itemName={`la disponibilidad de ${nombreDocenteBorrar}`} 
-    onDelete={eliminar} 
-/> -->
-
 <script lang="ts">
     import { onMount } from 'svelte';
-    import PageHeader from "$lib/components/PageHeader.svelte";
-    import DataTable from "$lib/components/DataTable.svelte";
-    import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
-    import TableAction from "$lib/components/TableAction.svelte";
-    import FormModal from "$lib/components/FormModal.svelte";
-    import ConfirmDeleteModal from "$lib/components/ConfirmDeleteModal.svelte";
+    import AvailabilityGrid from '$lib/components/AvailabilityGrid.svelte';
+    import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
-    // --- ESTADOS ---
-    let lista = $state([]);
-    let docentes = $state([]);
-    let periodos = $state([]);
+    const API = "https://gestion-de-horarios-1.onrender.com";
+
+    let disponibilidadSeleccionada = $state(new Set<string>());
+    let listaParaEnviar = $derived(Array.from(disponibilidadSeleccionada));
+
+    let periodos = $state<any[]>([]);
+    let periodoSeleccionado = $state<number | null>(null);
     let cargando = $state(true);
-    let editando = $state(false);
-    let idSeleccionado = $state(null);
-    let nombreDocenteBorrar = $state("");
-
-    const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-
-    let formulario = $state({
-        teacher_id: "", 
-        period_id: "", 
-        day_of_week: "Lunes",
-        start_time: "07:00", 
-        end_time: "12:00"
-    });
-
-    const headers = [
-        { label: "Docente", class: "ps-4" },
-        { label: "Día" },
-        { label: "Horario (Inicio - Fin)" },
-        { label: "Periodo" },
-        { label: "Acciones", class: "text-end pe-4" }
-    ];
+    let guardando = $state(false);
+    let mensaje = $state<{ tipo: string; texto: string } | null>(null);
 
     const getHeaders = () => ({
         "Authorization": `Bearer ${localStorage.getItem('token')}`,
         "Content-Type": "application/json"
     });
 
-    async function cargarDatos() {
+    const teacherId = () => localStorage.getItem('user_id');
+
+    async function cargarPeriodos() {
+        const res = await fetch(`${API}/academic-periods/`, { headers: getHeaders() });
+        if (res.ok) {
+            periodos = await res.json();
+            // Preseleccionar el periodo activo
+            const activo = periodos.find(p => p.is_active);
+            if (activo) periodoSeleccionado = activo.id;
+        }
+    }
+
+    async function cargarDisponibilidad() {
+        if (!periodoSeleccionado || !teacherId()) return;
         cargando = true;
         try {
-            const [resA, resD, resP] = await Promise.all([
-                fetch("https://gestion-de-horarios-final.onrender.com/get_availabilities", { headers: getHeaders() }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_teachers", { headers: getHeaders() }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_periods", { headers: getHeaders() })
-            ]);
-            if (resA.ok) lista = await resA.json();
-            if (resD.ok) docentes = await resD.json();
-            if (resP.ok) periodos = await resP.json();
-        } catch (e) { console.error("Error CUL Availability"); }
-        finally { cargando = false; }
+            const res = await fetch(
+                `${API}/availability/teacher/${teacherId()}/${periodoSeleccionado}`,
+                { headers: getHeaders() }
+            );
+            if (res.ok) {
+                const data = await res.json();
+                // Reconstruimos el Set con el formato "Día-bloque" que usa el grid
+                // El backend devuelve {day, block} — los unimos con el mismo separador
+                disponibilidadSeleccionada = new Set(data.map((d: any) => `${d.day}-${d.block}`));
+            }
+        } catch (e) {
+            console.error("Error cargando disponibilidad:", e);
+        } finally {
+            cargando = false;
+        }
     }
 
-    function prepararNuevo() {
-        editando = false; idSeleccionado = null;
-        formulario = { teacher_id: "", period_id: "", day_of_week: "Lunes", start_time: "07:00", end_time: "12:00" };
+    async function guardarDisponibilidad() {
+        if (!periodoSeleccionado) {
+            mensaje = { tipo: "warning", texto: "Selecciona un periodo académico primero." };
+            return;
+        }
+        if (disponibilidadSeleccionada.size === 0) {
+            mensaje = { tipo: "warning", texto: "Selecciona al menos un bloque de disponibilidad." };
+            return;
+        }
+
+        guardando = true;
+        mensaje = null;
+        try {
+            // 1. Limpiar disponibilidad anterior de este docente en este periodo
+            await fetch(
+                `${API}/availability/clear/${teacherId()}/${periodoSeleccionado}`,
+                { method: "DELETE", headers: getHeaders() }
+            );
+
+            // 2. Guardar cada bloque seleccionado
+            const bloques = Array.from(disponibilidadSeleccionada).map(id => {
+                // La clave es "Lunes-06:00 - 08:00"
+                // El día es la primera palabra antes del primer guion
+                const separador = id.indexOf('-');
+                const dia = id.substring(0, separador);
+                const bloque = id.substring(separador + 1);
+                return {
+                    teacher_id: Number(teacherId()),
+                    period_id: periodoSeleccionado,
+                    day_of_week: dia,
+                    block_label: bloque
+                };
+            });
+
+            const resultados = await Promise.all(
+                bloques.map(b => fetch(`${API}/availability/`, {
+                    method: "POST",
+                    headers: getHeaders(),
+                    body: JSON.stringify(b)
+                }))
+            );
+
+            const fallidos = resultados.filter(r => !r.ok).length;
+            if (fallidos === 0) {
+                mensaje = { tipo: "success", texto: `✅ Se guardaron ${bloques.length} bloques de disponibilidad.` };
+            } else {
+                mensaje = { tipo: "warning", texto: `Se guardaron ${bloques.length - fallidos} de ${bloques.length} bloques. Algunos ya existían.` };
+            }
+        } catch (e) {
+            mensaje = { tipo: "danger", texto: "Error de conexión. Intenta nuevamente." };
+        } finally {
+            guardando = false;
+        }
     }
 
-    function prepararEdicion(item: any) {
-        editando = true; idSeleccionado = item.id;
-        formulario = {
-            teacher_id: item.teacher_id,
-            period_id: item.period_id,
-            day_of_week: item.day_of_week,
-            start_time: item.start_time.substring(0,5),
-            end_time: item.end_time.substring(0,5)
-        };
+    async function limpiarSeleccion() {
+        disponibilidadSeleccionada = new Set();
+        mensaje = null;
     }
 
-    async function guardar() {
-        const url = editando ? `https://gestion-de-horarios-final.onrender.com/update_availability/${idSeleccionado}` : "https://gestion-de-horarios-final.onrender.com/create_availability";
-        const res = await fetch(url, {
-            method: editando ? "PUT" : "POST",
-            headers: getHeaders(),
-            body: JSON.stringify(formulario)
-        });
-        if (res.ok) await cargarDatos();
-    }
+    // Recargar disponibilidad cuando cambia el periodo
+    $effect(() => {
+        if (periodoSeleccionado) cargarDisponibilidad();
+    });
 
-    async function eliminar() {
-        const res = await fetch(`https://gestion-de-horarios-final.onrender.com/delete_availability/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: getHeaders()
-        });
-        if (res.ok) await cargarDatos();
-    }
-
-    onMount(cargarDatos);
+    onMount(async () => {
+        await cargarPeriodos();
+    });
 </script>
 
-<PageHeader 
-    title="Disponibilidad Docente" 
-    subtitle="Gestión de tiempos académicos - Universidad CUL" 
-    buttonText="Agregar Disponibilidad" 
-    onButtonClick={prepararNuevo} 
-/>
-
-{#if cargando}
-    <LoadingSpinner />
-{:else}
-    <!-- Cambio: Implementación del DataTable con búsqueda funcional -->
-    <DataTable {headers} data={lista}>
-        {#snippet rowTemplate(item)}
-            <tr>
-                <td class="ps-4">
-                    <div class="fw-bold text-dark">{item.teacher_name}</div>
-                </td>
-                <td>
-                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3">
-                        {item.day_of_week}
-                    </span>
-                </td>
-                <td>
-                    <span class="text-muted"><i class="bi bi-clock me-1"></i> {item.start_time} - {item.end_time}</span>
-                </td>
-                <td><small class="fw-medium text-secondary">{item.period_name}</small></td>
-                <td class="text-end pe-4">
-                    <TableAction 
-                        itemName={`Franja de ${item.teacher_name}`}
-                        onEdit={() => prepararEdicion(item)}
-                        onDelete={() => { idSeleccionado = item.id; nombreDocenteBorrar = item.teacher_name; }}
-                    />
-                </td>
-            </tr>
-        {/snippet}
-    </DataTable>
-{/if}
-
-<FormModal id="modalPrincipal" title="Disponibilidad" isEdit={editando} onSave={guardar}>
-    <div class="row g-3 text-start">
-        <div class="col-12">
-            <label for="f_teacher" class="form-label small fw-bold">DOCENTE</label>
-            <select id="f_teacher" class="form-select" bind:value={formulario.teacher_id} required>
-                <option value="" disabled>Seleccione un docente...</option>
-                {#each docentes as d}
-                    <option value={d.teacher_id}>{d.first_name} {d.last_name}</option>
-                {/each}
-            </select>
+<div class="container-fluid py-4 h-100 d-flex flex-column">
+    <!-- Encabezado -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-start mb-3 gap-3">
+        <div>
+            <h2 class="fw-bold mb-1">Mi Disponibilidad Horaria</h2>
+            <p class="text-muted mb-0">Marca los bloques en los que estarás disponible para el periodo seleccionado.</p>
         </div>
-
-        <div class="col-12">
-            <label for="f_period" class="form-label small fw-bold">PERIODO ACADÉMICO</label>
-            <select id="f_period" class="form-select" bind:value={formulario.period_id} required>
-                <option value="" disabled>Seleccione periodo...</option>
+        <div class="d-flex gap-2 align-items-start flex-wrap">
+            <!-- Selector de periodo -->
+            <select class="form-select form-select-sm shadow-sm" style="min-width: 160px;"
+                    bind:value={periodoSeleccionado}>
+                <option value={null} disabled>Selecciona periodo...</option>
                 {#each periodos as p}
-                    <option value={p.period_id}>{p.name}</option>
+                    <option value={p.id}>
+                        {p.name}{p.is_active ? ' (activo)' : ''}
+                    </option>
                 {/each}
             </select>
-        </div>
-
-        <div class="col-12">
-            <label for="f_day" class="form-label small fw-bold">DÍA DE LA SEMANA</label>
-            <select id="f_day" class="form-select" bind:value={formulario.day_of_week} required>
-                {#each dias as dia}
-                    <option value={dia}>{dia}</option>
-                {/each}
-            </select>
-        </div>
-
-        <div class="col-6">
-            <label for="f_start" class="form-label small fw-bold">HORA INICIO</label>
-            <input type="time" id="f_start" class="form-control" bind:value={formulario.start_time} required />
-        </div>
-        <div class="col-6">
-            <label for="f_end" class="form-label small fw-bold">HORA FIN</label>
-            <input type="time" id="f_end" class="form-control" bind:value={formulario.end_time} required />
+            <button class="btn btn-outline-danger btn-sm" onclick={limpiarSeleccion} disabled={guardando}>
+                <i class="bi bi-trash me-1"></i>Limpiar
+            </button>
+            <button class="btn btn-sm text-white px-3 shadow-sm" 
+                    style="background-color: #222F56;"
+                    onclick={guardarDisponibilidad} 
+                    disabled={guardando}>
+                {#if guardando}
+                    <span class="spinner-border spinner-border-sm me-1"></span>Guardando...
+                {:else}
+                    <i class="bi bi-save me-1"></i>Guardar Cambios
+                {/if}
+            </button>
         </div>
     </div>
-</FormModal>
 
-<ConfirmDeleteModal 
-    id="modalEliminar" 
-    itemName={`la disponibilidad de ${nombreDocenteBorrar}`} 
-    onDelete={eliminar} 
-/>
+    <!-- Mensaje de feedback -->
+    {#if mensaje}
+        <div class="alert alert-{mensaje.tipo} border-0 shadow-sm py-2 mb-3" role="alert">
+            {mensaje.texto}
+        </div>
+    {/if}
+
+    <!-- Info -->
+    <div class="alert alert-info border-0 shadow-sm mb-3 py-2 d-flex align-items-center" role="alert">
+        <i class="bi bi-info-circle-fill fs-5 me-2 text-primary"></i>
+        <small><strong>Instrucciones:</strong> Haz clic en una celda para seleccionarla o <strong>mantén presionado y arrastra</strong> para marcar múltiples bloques.</small>
+    </div>
+
+    <!-- Grid -->
+    {#if cargando}
+        <LoadingSpinner />
+    {:else}
+        <div class="flex-grow-1 overflow-hidden">
+            <AvailabilityGrid bind:seleccion={disponibilidadSeleccionada} />
+        </div>
+    {/if}
+
+    <!-- Resumen -->
+    <div class="mt-3 p-3 bg-white border-top shadow-sm rounded-top d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+            <span class="text-muted me-2 small">Bloques seleccionados:</span>
+            <span class="badge bg-dark">{disponibilidadSeleccionada.size}</span>
+            <span class="text-muted ms-3 me-2 small">Total de horas:</span>
+            <span class="badge" style="background-color: #222F56;">{disponibilidadSeleccionada.size * 2} hrs</span>
+        </div>
+        <div class="text-muted small">Zona horaria: Colombia (UTC-5)</div>
+    </div>
+</div>

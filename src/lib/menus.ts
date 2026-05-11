@@ -24,20 +24,16 @@ export const menus: Menus = {
   ],
   faculty: [
     { icon: "bi bi-speedometer2", label: "Dashboard", href: "/faculty/dashboard" },
-    { icon: "bi bi-building", label: "Facultades", href: "/faculty/facultades" },
-    { icon: "bi bi-clipboard2", label: "Programas", href: "/faculty/programas" },
-    { icon: "bi bi-person", label: "Docentes", href: "/faculty/docentes" },
-    { icon: "bi bi-book", label: "Materias", href: "/faculty/materias" },
-    { icon: "bi bi-calendar", label: "Periodos", href: "/faculty/periodos" },
+    { icon: "bi bi-person-badge", label: "Docentes", href: "/faculty/docentes" },
     { icon: "bi bi-clock", label: "Disponibilidad", href: "/faculty/disponibilidad" },
-    { icon: "bi bi-calendar-week", label: "Horarios", href: "/faculty/horarios" }
+    { icon: "bi bi-calendar-week", label: "Horarios", href: "/faculty/horarios" },
+    { icon: "bi bi-book", label: "Materias", href: "/faculty/materias" },
+    { icon: "bi bi-calendar", label: "Periodos", href: "/faculty/periodos" }
   ],
   teacher: [
     { icon: "bi bi-speedometer2", label: "Dashboard", href: "/teacher/dashboard" },
-    { icon: "bi bi-clipboard2", label: "Programas", href: "/teacher/programas" },
-    { icon: "bi bi-book", label: "Materias", href: "/teacher/materias" },
-    { icon: "bi bi-calendar", label: "Periodos", href: "/teacher/periodos" },
     { icon: "bi bi-clock", label: "Disponibilidad", href: "/teacher/disponibilidad" },
+    { icon: "bi bi-book", label: "Materias", href: "/teacher/materias" },
     { icon: "bi bi-calendar-week", label: "Horarios", href: "/teacher/horarios" }
   ]
 };

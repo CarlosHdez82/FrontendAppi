@@ -14,7 +14,7 @@
     async function cargarDatos() {
         const token = localStorage.getItem('token');
         try {
-            const res = await fetch("https://gestion-de-horarios-final.onrender.com/stats/summary", {
+            const res = await fetch("https://gestion-de-horarios-1.onrender.com/stats/summary", {
                 headers: { "Authorization": `Bearer ${token}` }
             });
             stats = await res.json();
@@ -40,7 +40,7 @@
                     <h5 class="fw-bold mb-3 text-primary">Configuración Académica</h5>
                     <p class="text-muted small">Define programas y materias de la Universidad CUL.</p>
                     <div class="d-flex gap-2">
-                        <a href="/admi/programas" class="btn btn-primary btn-sm">Programas</a>
+                        <!-- <a href="/admi/programas" class="btn btn-primary btn-sm">Programas</a> -->
                         <a href="/admi/materias" class="btn btn-outline-primary btn-sm">Materias</a>
                     </div>
                 </div>

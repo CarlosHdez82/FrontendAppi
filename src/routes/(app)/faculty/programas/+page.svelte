@@ -35,8 +35,8 @@
         const h = { "Authorization": `Bearer ${token}` };
         try {
             const [resP, resF] = await Promise.all([
-                fetch("https://gestion-de-horarios-final.onrender.com/get_programs", { headers: h }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_faculties", { headers: h })
+                fetch("https://gestion-de-horarios-1.onrender.com/programs/", { headers: h }),
+                fetch("https://gestion-de-horarios-1.onrender.com/get_faculties", { headers: h })
             ]);
 
             if (resP.ok) programas = await resP.json();
@@ -67,8 +67,8 @@
 
     async function guardar() {
         const url = editando 
-            ? `https://gestion-de-horarios-final.onrender.com/update_program/${idSeleccionado}` 
-            : "https://gestion-de-horarios-final.onrender.com/create_program";
+            ? `https://gestion-de-horarios-1.onrender.com/programs/${idSeleccionado}` 
+            : "https://gestion-de-horarios-1.onrender.com/programs/";
         
         const res = await fetch(url, {
             method: editando ? "PUT" : "POST",
@@ -83,7 +83,7 @@
     }
 
     async function eliminar() {
-        const res = await fetch(`https://gestion-de-horarios-final.onrender.com/delete_program/${idSeleccionado}`, {
+        const res = await fetch(`https://gestion-de-horarios-1.onrender.com/programs/${idSeleccionado}`, {
             method: "DELETE",
             headers: { "Authorization": `Bearer ${localStorage.getItem('token')}` }
         });
@@ -210,8 +210,8 @@
         const h = { "Authorization": `Bearer ${token}` };
         try {
             const [resP, resF] = await Promise.all([
-                fetch("https://gestion-de-horarios-final.onrender.com/get_programs", { headers: h }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_faculties", { headers: h })
+                fetch("https://gestion-de-horarios-1.onrender.com/programs/", { headers: h }),
+                fetch("https://gestion-de-horarios-1.onrender.com/get_faculties", { headers: h })
             ]);
 
             if (resP.ok) programas = await resP.json();
@@ -242,8 +242,8 @@
 
     async function guardar() {
         const url = editando 
-            ? `https://gestion-de-horarios-final.onrender.com/update_program/${idSeleccionado}` 
-            : "https://gestion-de-horarios-final.onrender.com/create_program";
+            ? `https://gestion-de-horarios-1.onrender.com/programs/${idSeleccionado}` 
+            : "https://gestion-de-horarios-1.onrender.com/programs/";
         
         const res = await fetch(url, {
             method: editando ? "PUT" : "POST",
@@ -258,7 +258,7 @@
     }
 
     async function eliminar() {
-        const res = await fetch(`https://gestion-de-horarios-final.onrender.com/delete_program/${idSeleccionado}`, {
+        const res = await fetch(`https://gestion-de-horarios-1.onrender.com/programs/${idSeleccionado}`, {
             method: "DELETE",
             headers: { "Authorization": `Bearer ${localStorage.getItem('token')}` }
         });

@@ -1,403 +1,158 @@
-<!-- <script lang="ts">
-    import { onMount } from 'svelte';
-    import PageHeader from "$lib/components/PageHeader.svelte";
-    import DataTable from "$lib/components/DataTable.svelte";
-    import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
-    import TableAction from "$lib/components/TableAction.svelte";
-    import FormModal from "$lib/components/FormModal.svelte";
-    import ConfirmDeleteModal from "$lib/components/ConfirmDeleteModal.svelte";
-
-    // --- ESTADOS ---
-    let horarios = $state([]);
-    let docentes = $state([]);
-    let materias = $state([]);
-    let periodos = $state([]);
-    let cargando = $state(true);
-    let editando = $state(false);
-    let idSeleccionado = $state(null);
-    let itemAEliminar = $state("");
-
-    const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-
-    let formulario = $state({
-        teacher_id: "",
-        subject_id: "",
-        period_id: "",
-        day_of_week: "",
-        start_time: "07:00",
-        end_time: "09:00",
-        is_active: true
-    });
-
-    const headers = [
-        { label: "Horario", class: "ps-4" },
-        { label: "Docente" },
-        { label: "Materia" },
-        { label: "Periodo" },
-        { label: "Acciones", class: "text-end pe-4" }
-    ];
-
-    const getHeaders = () => ({
-        "Authorization": `Bearer ${localStorage.getItem('token')}`,
-        "Content-Type": "application/json"
-    });
-
-    async function cargarDatos() {
-        cargando = true;
-        try {
-            const [rH, rD, rM, rP] = await Promise.all([
-                fetch("https://gestion-de-horarios-final.onrender.com/get_schedules", { headers: getHeaders() }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_teachers", { headers: getHeaders() }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_subjects", { headers: getHeaders() }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_periods", { headers: getHeaders() })
-            ]);
-            if (rH.ok) horarios = await rH.json();
-            if (rD.ok) docentes = await rD.json();
-            if (rM.ok) materias = await rM.json();
-            if (rP.ok) periodos = await rP.json();
-        } catch (e) {
-            console.error("Error de conexión CUL");
-        } finally {
-            cargando = false;
-        }
-    }
-
-    function prepararNuevo() {
-        editando = false;
-        idSeleccionado = null;
-        formulario = {
-            teacher_id: "", subject_id: "", period_id: "",
-            day_of_week: "", start_time: "07:00", end_time: "09:00",
-            is_active: true
-        };
-    }
-
-    function prepararEdicion(h: any) {
-        editando = true;
-        idSeleccionado = h.id;
-        formulario = { 
-            ...h,
-            // Limpieza de segundos para compatibilidad con input type="time"
-            start_time: h.start_time.substring(0,5),
-            end_time: h.end_time.substring(0,5)
-        };
-    }
-
-    async function guardar() {
-        const url = editando 
-            ? `https://gestion-de-horarios-final.onrender.com/update_schedule/${idSeleccionado}` 
-            : "https://gestion-de-horarios-final.onrender.com/create_schedule";
-        
-        const res = await fetch(url, {
-            method: editando ? "PUT" : "POST",
-            headers: getHeaders(),
-            body: JSON.stringify(formulario)
-        });
-
-        if (res.ok) await cargarDatos();
-    }
-
-    async function eliminar() {
-        const res = await fetch(`https://gestion-de-horarios-final.onrender.com/delete_schedule/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: getHeaders()
-        });
-        if (res.ok) await cargarDatos();
-    }
-
-    onMount(cargarDatos);
-</script>
-
-<PageHeader 
-    title="Horarios Docentes" 
-    subtitle="Sistema de Gestión - Universidad CUL" 
-    buttonText="Nuevo Horario" 
-    onButtonClick={prepararNuevo} 
-/>
-
-{#if cargando}
-    <LoadingSpinner />
-{:else}
-    <DataTable {headers}>
-        {#each horarios as h}
-            <tr>
-                <td class="ps-4">
-                    <span class="fw-bold d-block">{h.day_of_week}</span>
-                    <span class="badge bg-light text-primary border">{h.start_time} - {h.end_time}</span>
-                </td>
-                <td class="fw-medium text-secondary">{h.teacher_name}</td>
-                <td class="fw-semibold text-dark">{h.subject_name}</td>
-                <td class="text-muted small">{h.period_name}</td>
-                <td class="text-end pe-4">
-                    <TableAction 
-                        itemName={`Horario de ${h.subject_name}`}
-                        onEdit={() => prepararEdicion(h)}
-                        onDelete={() => { idSeleccionado = h.id; itemAEliminar = `${h.subject_name} (${h.teacher_name})`; }}
-                    />
-                </td>
-            </tr>
-        {/each}
-    </DataTable>
-{/if}
-
-<FormModal id="modalPrincipal" title="Horario" isEdit={editando} onSave={guardar}>
-    <div class="row g-3 text-start">
-        <div class="col-12">
-            <label for="teacher_id" class="form-label small fw-bold text-muted">DOCENTE</label>
-            <select id="teacher_id" class="form-select" bind:value={formulario.teacher_id} required>
-                <option value="" disabled>Seleccione un docente...</option>
-                {#each docentes as d}
-                    <option value={d.id}>{d.first_name} {d.last_name}</option>
-                {/each}
-            </select>
-        </div>
-
-        <div class="col-md-6">
-            <label for="subject_id" class="form-label small fw-bold text-muted">ASIGNATURA</label>
-            <select id="subject_id" class="form-select" bind:value={formulario.subject_id} required>
-                <option value="" disabled>Seleccione materia...</option>
-                {#each materias as m}
-                    <option value={m.id}>{m.name}</option>
-                {/each}
-            </select>
-        </div>
-
-        <div class="col-md-6">
-            <label for="period_id" class="form-label small fw-bold text-muted">PERIODO</label>
-            <select id="period_id" class="form-select" bind:value={formulario.period_id} required>
-                <option value="" disabled>Seleccione periodo...</option>
-                {#each periodos as p}
-                    <option value={p.id}>{p.name}</option>
-                {/each}
-            </select>
-        </div>
-
-        <div class="col-md-4">
-            <label for="day_of_week" class="form-label small fw-bold text-muted">DÍA</label>
-            <select id="day_of_week" class="form-select" bind:value={formulario.day_of_week} required>
-                <option value="" disabled>Seleccione día...</option>
-                {#each diasSemana as dia}
-                    <option value={dia}>{dia}</option>
-                {/each}
-            </select>
-        </div>
-
-        <div class="col-md-4">
-            <label for="start_time" class="form-label small fw-bold text-muted">HORA INICIO</label>
-            <input type="time" id="start_time" class="form-control" bind:value={formulario.start_time} required>
-        </div>
-
-        <div class="col-md-4">
-            <label for="end_time" class="form-label small fw-bold text-muted">HORA FIN</label>
-            <input type="time" id="end_time" class="form-control" bind:value={formulario.end_time} required>
-        </div>
-    </div>
-</FormModal>
-
-<ConfirmDeleteModal 
-    id="modalEliminar" 
-    itemName={`el horario de ${itemAEliminar}`} 
-    onDelete={eliminar} 
-/> -->
-
 <script lang="ts">
     import { onMount } from 'svelte';
-    import PageHeader from "$lib/components/PageHeader.svelte";
-    import DataTable from "$lib/components/DataTable.svelte";
-    import LoadingSpinner from "$lib/components/LoadingSpinner.svelte";
-    import TableAction from "$lib/components/TableAction.svelte";
-    import FormModal from "$lib/components/FormModal.svelte";
-    import ConfirmDeleteModal from "$lib/components/ConfirmDeleteModal.svelte";
+    import ScheduleGrid from '$lib/components/ScheduleGrid.svelte';
+    import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
-    // --- ESTADOS ---
-    let horarios = $state([]);
-    let docentes = $state([]);
-    let materias = $state([]);
-    let periodos = $state([]);
-    let cargando = $state(true);
-    let editando = $state(false);
-    let idSeleccionado = $state(null);
-    let itemAEliminar = $state("");
+    const API = "https://gestion-de-horarios-1.onrender.com";
 
-    const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-
-    let formulario = $state({
-        teacher_id: "",
-        subject_id: "",
-        period_id: "",
-        day_of_week: "",
-        start_time: "07:00",
-        end_time: "09:00",
-        is_active: true
-    });
-
-    const headers = [
-        { label: "Horario", class: "ps-4" },
-        { label: "Docente" },
-        { label: "Materia" },
-        { label: "Periodo" },
-        { label: "Acciones", class: "text-end pe-4" }
+    // Colores para diferenciar materias visualmente
+    const COLORES = [
+        '#222F56', '#F3B105', '#2E86AB', '#A23B72',
+        '#F18F01', '#44BBA4', '#E94F37', '#393E41'
     ];
 
+    let horarioAsignado = $state<Record<string, any>>({});
+    let periodos = $state<any[]>([]);
+    let periodoSeleccionado = $state<number | null>(null);
+    let cargando = $state(true);
+    let sinHorario = $state(false);
+
     const getHeaders = () => ({
-        "Authorization": `Bearer ${localStorage.getItem('token')}`,
-        "Content-Type": "application/json"
+        "Authorization": `Bearer ${localStorage.getItem('token')}`
     });
 
-    async function cargarDatos() {
+    const teacherId = () => localStorage.getItem('user_id');
+
+    async function cargarPeriodos() {
+        const res = await fetch(`${API}/academic-periods/`, { headers: getHeaders() });
+        if (res.ok) {
+            periodos = await res.json();
+            const activo = periodos.find(p => p.is_active);
+            if (activo) periodoSeleccionado = activo.id;
+        }
+    }
+
+    async function cargarHorario() {
+        if (!periodoSeleccionado || !teacherId()) return;
         cargando = true;
+        sinHorario = false;
         try {
-            const [rH, rD, rM, rP] = await Promise.all([
-                fetch("https://gestion-de-horarios-final.onrender.com/get_schedules", { headers: getHeaders() }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_teachers", { headers: getHeaders() }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_subjects", { headers: getHeaders() }),
-                fetch("https://gestion-de-horarios-final.onrender.com/get_periods", { headers: getHeaders() })
-            ]);
-            if (rH.ok) horarios = await rH.json();
-            if (rD.ok) docentes = await rD.json();
-            if (rM.ok) materias = await rM.json();
-            if (rP.ok) periodos = await rP.json();
+            const res = await fetch(`${API}/schedules/`, { headers: getHeaders() });
+            if (res.ok) {
+                const todos = await res.json();
+                // Filtrar solo los horarios de este docente y periodo
+                const misPeriodo = todos.filter((h: any) =>
+                    String(h.teacher_id) === teacherId() &&
+                    h.period_id === periodoSeleccionado
+                );
+
+                if (misPeriodo.length === 0) {
+                    horarioAsignado = {};
+                    sinHorario = true;
+                    return;
+                }
+
+                // Asignar un color fijo por materia
+                const colorMap: Record<number, string> = {};
+                let colorIdx = 0;
+                misPeriodo.forEach((h: any) => {
+                    if (!colorMap[h.subject_id]) {
+                        colorMap[h.subject_id] = COLORES[colorIdx % COLORES.length];
+                        colorIdx++;
+                    }
+                });
+
+                // Construir el objeto que espera ScheduleGrid: 'Día-bloque' => {materia, color, grupo}
+                const grid: Record<string, any> = {};
+                misPeriodo.forEach((h: any) => {
+                    const key = `${h.day_of_week}-${h.block_label}`;
+                    grid[key] = {
+                        materia: h.subject_name || 'Materia',
+                        color: colorMap[h.subject_id],
+                        grupo: h.group_code || 'A'
+                    };
+                });
+                horarioAsignado = grid;
+            }
         } catch (e) {
-            console.error("Error de conexión CUL");
+            console.error("Error cargando horario:", e);
         } finally {
             cargando = false;
         }
     }
 
-    function prepararNuevo() {
-        editando = false;
-        idSeleccionado = null;
-        formulario = {
-            teacher_id: "", subject_id: "", period_id: "",
-            day_of_week: "", start_time: "07:00", end_time: "09:00",
-            is_active: true
-        };
+    $effect(() => {
+        if (periodoSeleccionado) cargarHorario();
+    });
+
+    onMount(async () => {
+        await cargarPeriodos();
+    });
+
+    function imprimirHorario() {
+        window.print();
     }
-
-    function prepararEdicion(h: any) {
-        editando = true;
-        idSeleccionado = h.id;
-        formulario = { 
-            ...h,
-            start_time: h.start_time.substring(0,5),
-            end_time: h.end_time.substring(0,5)
-        };
-    }
-
-    async function guardar() {
-        const url = editando 
-            ? `https://gestion-de-horarios-final.onrender.com/update_schedule/${idSeleccionado}` 
-            : "https://gestion-de-horarios-final.onrender.com/create_schedule";
-        
-        const res = await fetch(url, {
-            method: editando ? "PUT" : "POST",
-            headers: getHeaders(),
-            body: JSON.stringify(formulario)
-        });
-
-        if (res.ok) await cargarDatos();
-    }
-
-    async function eliminar() {
-        const res = await fetch(`https://gestion-de-horarios-final.onrender.com/delete_schedule/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: getHeaders()
-        });
-        if (res.ok) await cargarDatos();
-    }
-
-    onMount(cargarDatos);
 </script>
 
-<PageHeader 
-    title="Horarios Docentes" 
-    subtitle="Sistema de Gestión - Universidad CUL" 
-    buttonText="Nuevo Horario" 
-    onButtonClick={prepararNuevo} 
-/>
-
-{#if cargando}
-    <LoadingSpinner />
-{:else}
-    <!-- Cambio: Implementación de DataTable con la propiedad 'data' para habilitar búsqueda -->
-    <DataTable {headers} data={horarios}>
-        {#snippet rowTemplate(h)}
-            <tr>
-                <td class="ps-4">
-                    <span class="fw-bold d-block">{h.day_of_week}</span>
-                    <span class="badge bg-light text-primary border">{h.start_time} - {h.end_time}</span>
-                </td>
-                <td class="fw-medium text-secondary">{h.teacher_name}</td>
-                <td class="fw-semibold text-dark">{h.subject_name}</td>
-                <td class="text-muted small">{h.period_name}</td>
-                <td class="text-end pe-4">
-                    <TableAction 
-                        itemName={`Horario de ${h.subject_name}`}
-                        onEdit={() => prepararEdicion(h)}
-                        onDelete={() => { idSeleccionado = h.id; itemAEliminar = `${h.subject_name} (${h.teacher_name})`; }}
-                    />
-                </td>
-            </tr>
-        {/snippet}
-    </DataTable>
-{/if}
-
-<FormModal id="modalPrincipal" title="Horario" isEdit={editando} onSave={guardar}>
-    <div class="row g-3 text-start">
-        <div class="col-12">
-            <label for="teacher_id" class="form-label small fw-bold text-muted">DOCENTE</label>
-            <select id="teacher_id" class="form-select" bind:value={formulario.teacher_id} required>
-                <option value="" disabled>Seleccione un docente...</option>
-                {#each docentes as d}
-                    <option value={d.id}>{d.first_name} {d.last_name}</option>
-                {/each}
-            </select>
+<div class="container-fluid py-4 h-100 d-flex flex-column">
+    <!-- Header -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h2 class="fw-bold mb-1">Mi Horario de Clases</h2>
+            <p class="text-muted mb-0">Universidad CUL — Horario oficial asignado por coordinación</p>
         </div>
-
-        <div class="col-md-6">
-            <label for="subject_id" class="form-label small fw-bold text-muted">ASIGNATURA</label>
-            <select id="subject_id" class="form-select" bind:value={formulario.subject_id} required>
-                <option value="" disabled>Seleccione materia...</option>
-                {#each materias as m}
-                    <option value={m.id}>{m.name}</option>
-                {/each}
-            </select>
-        </div>
-
-        <div class="col-md-6">
-            <label for="period_id" class="form-label small fw-bold text-muted">PERIODO</label>
-            <select id="period_id" class="form-select" bind:value={formulario.period_id} required>
-                <option value="" disabled>Seleccione periodo...</option>
+        <div class="d-flex gap-2 align-items-center flex-wrap">
+            <select class="form-select form-select-sm shadow-sm" style="min-width: 160px;"
+                    bind:value={periodoSeleccionado}>
+                <option value={null} disabled>Selecciona periodo...</option>
                 {#each periodos as p}
-                    <option value={p.id}>{p.name}</option>
+                    <option value={p.id}>{p.name}{p.is_active ? ' (activo)' : ''}</option>
                 {/each}
             </select>
-        </div>
-
-        <div class="col-md-4">
-            <label for="day_of_week" class="form-label small fw-bold text-muted">DÍA</label>
-            <select id="day_of_week" class="form-select" bind:value={formulario.day_of_week} required>
-                <option value="" disabled>Seleccione día...</option>
-                {#each diasSemana as dia}
-                    <option value={dia}>{dia}</option>
-                {/each}
-            </select>
-        </div>
-
-        <div class="col-md-4">
-            <label for="start_time" class="form-label small fw-bold text-muted">HORA INICIO</label>
-            <input type="time" id="start_time" class="form-control" bind:value={formulario.start_time} required>
-        </div>
-
-        <div class="col-md-4">
-            <label for="end_time" class="form-label small fw-bold text-muted">HORA FIN</label>
-            <input type="time" id="end_time" class="form-control" bind:value={formulario.end_time} required>
+            <button class="btn btn-outline-primary btn-sm shadow-sm" onclick={imprimirHorario}>
+                <i class="bi bi-printer me-1"></i>Imprimir
+            </button>
         </div>
     </div>
-</FormModal>
 
-<ConfirmDeleteModal 
-    id="modalEliminar" 
-    itemName={`el horario de ${itemAEliminar}`} 
-    onDelete={eliminar} 
-/>
+    {#if cargando}
+        <LoadingSpinner />
+    {:else if sinHorario}
+        <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center">
+            <i class="bi bi-calendar-x fs-4 me-3"></i>
+            <div>
+                <strong>Sin horario asignado</strong>
+                <div class="small text-muted">No tienes clases asignadas para este periodo. Contacta a tu coordinador.</div>
+            </div>
+        </div>
+    {:else}
+        <!-- Alert de estado -->
+        <div class="alert alert-success border-0 shadow-sm mb-4 py-2 d-flex align-items-center">
+            <i class="bi bi-check-circle-fill fs-5 me-2"></i>
+            <small><strong>Horario Confirmado:</strong> Si encuentras alguna inconsistencia, contacta a tu Coordinador de Facultad.</small>
+        </div>
+
+        <!-- Leyenda de materias -->
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            {#each Object.values(horarioAsignado).filter((v, i, arr) => arr.findIndex(x => x.materia === v.materia) === i) as clase}
+                <span class="badge px-3 py-2" style="background-color: {clase.color};">
+                    {clase.materia}
+                </span>
+            {/each}
+        </div>
+
+        <!-- Grid visual -->
+        <div class="flex-grow-1">
+            <ScheduleGrid horario={horarioAsignado} />
+        </div>
+    {/if}
+</div>
+
+<style>
+    @media print {
+        :global(.sidebar-custom), :global(.header-custom), .btn, .alert, select {
+            display: none !important;
+        }
+        .container-fluid { padding: 0 !important; }
+    }
+</style>

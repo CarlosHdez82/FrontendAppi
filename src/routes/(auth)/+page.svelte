@@ -1,63 +1,83 @@
 <script lang="ts">
-  import { userRole, userName } from "$lib/stores/user";
+  import { userRole, userName, userId } from "$lib/stores/user";
   import { goto } from "$app/navigation";
 
-  // Usamos $state para que Svelte 5 detecte los cambios en los inputs
+  // Usamos $state de Svelte 5 para reactividad
   let email = $state("");
   let password = $state("");
   let error = $state("");
 
-  // Recibimos el evento 'e' para manejar el preventDefault manualmente
+  // Mapa de roles: cubre el nombre exacto que devuelve la BD
+  const routes: Record<string, string> = {
+    // Administrador
+    "admi": "/admi/dashboard",
+    "admin": "/admi/dashboard",
+    "Admi": "/admi/dashboard",
+    "Admin": "/admi/dashboard",
+    "Administrador": "/admi/dashboard",
+    "administrador": "/admi/dashboard",
+    // Coordinador / Faculty
+    "faculty": "/faculty/dashboard",
+    "Faculty": "/faculty/dashboard",
+    "Decano": "/faculty/dashboard",
+    "decano": "/faculty/dashboard",
+    "Coordinador": "/faculty/dashboard",
+    "coordinador": "/faculty/dashboard",
+    // Docente / Teacher
+    "teacher": "/teacher/dashboard",
+    "Teacher": "/teacher/dashboard",
+    "Docente": "/teacher/dashboard",
+    "docente": "/teacher/dashboard",
+  };
+
   async function handleLogin(e: Event) {
     e.preventDefault(); 
-    error = ""; // Limpiamos errores previos al intentar ingresar
+    error = ""; 
 
     try {
-      const res = await fetch("https://gestion-de-horarios-final.onrender.com/login", {
+      const res = await fetch("https://gestion-de-horarios-1.onrender.com/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // Enviamos los valores capturados por los $state
         body: JSON.stringify({ email, password })
       });
 
       if (!res.ok) {
-        error = "Credenciales inválidas";
+        // Si el controlador lanza 401, entra aquí
+        error = "Correo o contraseña incorrectos";
         return;
       }
 
       const data = await res.json();
 
-      // --- PASO 1: IMPLEMENTACIÓN DE LÓGICA JWT ---
+      // --- SINCRONIZACIÓN CON TU CONTROLADOR DE PYTHON ---
       
-      // 1. Guardamos el Token físico en el navegador
+      // 1. Guardar el Token JWT
       localStorage.setItem("token", data.token);
 
-      // 2. Guardamos el Nombre del Usuario también en localStorage para mostrarlo en la interfaz
-      const fullName = `${data.first_name} ${data.last_name}`;
-      localStorage.setItem("user_name", fullName);
+      // Guardar Nombre Completo
+      localStorage.setItem("user_name", data.full_name);
+      userName.set(data.full_name); 
 
-      // 3. Guardamos el Rol también en localStorage para que persista al recargar (F5)
-      localStorage.setItem("user_role", data.role_name);
+      // Guardar el Rol
+      localStorage.setItem("user_role", data.role);
+      userRole.set(data.role);
+
+      // Guardar el ID del usuario
+      localStorage.setItem("user_id", String(data.id));
+      userId.set(String(data.id));
       
-      // 1. Actualizamos el store
-      userRole.set(data.role_name);
-      userName.set(fullName); 
-
-      // 2. Redirigimos al dashboard correspondiente
-      const targetPath = {
-        "admi": "/admi/dashboard",
-        "faculty": "/faculty/dashboard",
-        "teacher": "/teacher/dashboard"
-      }[data.role_name];
+      // 4. Redirección basada en el mapa de rutas
+      const targetPath = routes[data.role];
 
       if (targetPath) {
         await goto(targetPath, { invalidateAll: true }); 
-        // 'invalidateAll' fuerza a SvelteKit a volver a cargar los datos de la nueva ruta
       } else {
-        error = "Rol no reconocido: " + data.role_name;
+        // Este mensaje te dirá qué nombre exacto está devolviendo Neon
+        error = "Rol no configurado en frontend: " + data.role;
       }
+
     } catch (err) {
-      error = "Error de conexión con el servidor";
+      error = "No se pudo conectar con el servidor de Render. Revisa tu conexión.";
     }
   }
 </script>
@@ -71,12 +91,12 @@
     <img
       class="d-block mx-auto mb-1"
       src="/logo.png"
-      alt="Logo"
+      alt="Logo CUL"
       width="100"
       height="40"
     />
-    <h3 class="h3 mb-3 fw-normal text-center">Sistema de Gestión de Horarios</h3>
-    <h6 class="h6 mb-3 fw-normal text-center">Corporación Universitaria Latinoamericana</h6>
+    <h3 class="h3 mb-3 fw-normal text-center">Gestión de Horarios</h3>
+    <h6 class="h6 mb-4 fw-normal text-center text-secondary">Acceso Institucional CUL</h6>
 
     <div class="form-floating mb-3">
       <input
@@ -102,25 +122,23 @@
       <label for="floatingPassword">Contraseña</label>
     </div>
 
-    <div class="form-check text-start my-3">
-      <input
-        class="form-check-input"
-        type="checkbox"
-        id="checkDefault"
-      />
-      <label class="form-check-label" for="checkDefault">
-        Recordarme
-      </label>
-    </div>
-
-    <button class="btn btn-primary w-100 py-2" type="submit">
-      Ingresar
+    <button class="btn btn-primary w-100 py-2 mt-2" type="submit">
+      Ingresar al Sistema
     </button>
 
     {#if error}
-      <div class="alert alert-danger mt-3">{error}</div>
+      <div class="alert alert-danger mt-3 py-2 text-center" role="alert">
+        <small>{error}</small>
+      </div>
     {/if}
 
-    <p class="mt-5 mb-3 text-body-secondary text-center">&copy; 2026</p>
+    <p class="mt-5 mb-3 text-body-secondary text-center">&copy; 2026 CUL - Barranquilla</p>
   </form>
 </main>
+
+<style>
+  /* Opcional: Estilos para que el login se vea más limpio */
+  .form-signin .form-control:focus {
+    z-index: 2;
+  }
+</style>

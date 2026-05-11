@@ -47,7 +47,7 @@
     // --- LÓGICA API ---
     async function cargar() {
         try {
-            const res = await fetch("https://gestion-de-horarios-final.onrender.com/get_faculties", {
+            const res = await fetch("https://gestion-de-horarios-1.onrender.com/faculties/", {
                 headers: { "Authorization": `Bearer ${localStorage.getItem('token')}` }
             });
             const data = await res.json();
@@ -61,8 +61,8 @@
 
     async function guardar() {
         const url = editando 
-            ? `https://gestion-de-horarios-final.onrender.com/update_faculty/${idSeleccionado}` 
-            : "https://gestion-de-horarios-final.onrender.com/create_faculty";
+            ? `https://gestion-de-horarios-1.onrender.com/faculties/${idSeleccionado}` 
+            : "https://gestion-de-horarios-1.onrender.com/faculties/";
         
         const res = await fetch(url, {
             method: editando ? "PUT" : "POST",
@@ -77,7 +77,7 @@
     }
 
     async function eliminar() {
-        const res = await fetch(`https://gestion-de-horarios-final.onrender.com/delete_faculty/${idSeleccionado}`, {
+        const res = await fetch(`https://gestion-de-horarios-1.onrender.com/faculties/${idSeleccionado}`, {
             method: "DELETE",
             headers: { "Authorization": `Bearer ${localStorage.getItem('token')}` }
         });

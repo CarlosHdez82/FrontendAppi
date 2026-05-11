@@ -8,6 +8,8 @@
     import FormModal from "$lib/components/FormModal.svelte";
     import ConfirmDeleteModal from "$lib/components/ConfirmDeleteModal.svelte";
 
+    const API = "https://gestion-de-horarios-1.onrender.com";
+
     // --- ESTADOS REACTIVOS ---
     let facultades = $state<any[]>([]);
     let cargando = $state(true);
@@ -22,11 +24,15 @@
     });
 
     const headers = [
-        // { label: "ID", class: "ps-4" },
         { label: "Nombre de la Facultad" },
         { label: "Estado" },
         { label: "Acciones", class: "text-center" }
     ];
+
+    const getHeaders = () => ({
+        "Authorization": `Bearer ${localStorage.getItem('token')}`,
+        "Content-Type": "application/json"
+    });
 
     // --- FUNCIONES DE APOYO ---
     function prepararNuevo() {
@@ -37,19 +43,15 @@
 
     function prepararEdicion(f: any) {
         editando = true;
-        idSeleccionado = f.faculties_id;
-        formulario = {
-            name: f.name,
-            is_active: f.is_active
-        };
+        idSeleccionado = f.id;
+        formulario = { name: f.name, is_active: f.is_active };
     }
 
     // --- LÓGICA API ---
     async function cargar() {
+        cargando = true;
         try {
-            const res = await fetch("https://gestion-de-horarios-final.onrender.com/get_faculties", {
-                headers: { "Authorization": `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await fetch(`${API}/faculties/`, { headers: getHeaders() });
             const data = await res.json();
             facultades = Array.isArray(data) ? data : [];
         } catch (err) {
@@ -60,16 +62,13 @@
     }
 
     async function guardar() {
-        const url = editando 
-            ? `https://gestion-de-horarios-final.onrender.com/update_faculty/${idSeleccionado}` 
-            : "https://gestion-de-horarios-final.onrender.com/create_faculty";
-        
+        const url = editando
+            ? `${API}/faculties/${idSeleccionado}`
+            : `${API}/faculties/`;
+
         const res = await fetch(url, {
             method: editando ? "PUT" : "POST",
-            headers: {
-                "Authorization": `Bearer ${localStorage.getItem('token')}`,
-                "Content-Type": "application/json"
-            },
+            headers: getHeaders(),
             body: JSON.stringify(formulario)
         });
 
@@ -77,9 +76,9 @@
     }
 
     async function eliminar() {
-        const res = await fetch(`https://gestion-de-horarios-final.onrender.com/delete_faculty/${idSeleccionado}`, {
+        const res = await fetch(`${API}/faculties/${idSeleccionado}`, {
             method: "DELETE",
-            headers: { "Authorization": `Bearer ${localStorage.getItem('token')}` }
+            headers: getHeaders()
         });
         if (res.ok) await cargar();
     }
@@ -99,11 +98,9 @@
 {:else if error}
     <div class="alert alert-danger border-0 shadow-sm">{error}</div>
 {:else}
-    <!-- Cambio: Implementación del DataTable con búsqueda habilitada -->
     <DataTable {headers} data={facultades}>
         {#snippet rowTemplate(f)}
             <tr>
-                <!-- <td class="ps-4 text-muted">#{f.faculties_id}</td> -->
                 <td>
                     <div class="fw-bold">{f.name}</div>
                     <small class="text-muted">CUL - Sede Principal</small>
@@ -113,7 +110,7 @@
                     <TableAction 
                         itemName={f.name}
                         onEdit={() => prepararEdicion(f)}
-                        onDelete={() => { idSeleccionado = f.faculties_id; nombreBorrar = f.name; }}
+                        onDelete={() => { idSeleccionado = f.id; nombreBorrar = f.name; }}
                     />
                 </td>
             </tr>
