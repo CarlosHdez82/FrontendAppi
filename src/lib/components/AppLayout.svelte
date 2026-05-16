@@ -4,7 +4,7 @@
     import MobileSidebar from './MobileSidebar.svelte';
     import MainContent from './MainContent.svelte';
     import { userRole, userName } from "$lib/stores/user";
-    import { menus } from "$lib/menus";
+    import { menus, type Menus } from "$lib/menus";
     import { page } from "$app/stores";
     import { goto } from "$app/navigation";
 
@@ -18,7 +18,7 @@
 
     let role = $derived($userRole);
     let name = $derived($userName);
-    let items = $derived(role ? (menus[role] || []) : []);
+    let items = $derived(role ? (menus[role as keyof Menus] || []) : []);
     let displayRole = $derived(role ? (roleLabels[role] || role) : "Invitado");
 
     let currentLabel = $derived(() => {
