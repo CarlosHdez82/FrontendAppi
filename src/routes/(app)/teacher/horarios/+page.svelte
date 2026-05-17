@@ -1,21 +1,38 @@
 <script lang="ts">
+    // ============================================================
+    // teacher/horarios/+page.svelte — Horario del Docente
+    // ============================================================
+    // Muestra el horario oficial asignado al docente por la
+    // coordinación usando el componente ScheduleGrid.
+    //
+    // Proceso de construcción del horario:
+    // 1. Carga todos los horarios del sistema (GET /schedules/)
+    // 2. Filtra los del docente autenticado en el periodo seleccionado
+    // 3. Asigna un color único por materia para diferenciación visual
+    // 4. Construye el objeto 'horarioAsignado' con clave "Día-bloque"
+    //    que espera el componente ScheduleGrid
+    //
+    // $effect() recarga el horario al cambiar el periodo.
+    // Incluye estilos de impresión para ocultar la UI al imprimir.
+    // ============================================================
     import { onMount } from 'svelte';
     import ScheduleGrid from '$lib/components/ScheduleGrid.svelte';
     import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
     const API = "https://gestion-de-horarios-1.onrender.com";
 
-    // Colores para diferenciar materias visualmente
+    // Paleta de colores institucionales para diferenciar materias visualmente
     const COLORES = [
         '#222F56', '#F3B105', '#2E86AB', '#A23B72',
         '#F18F01', '#44BBA4', '#E94F37', '#393E41'
     ];
 
+    // Objeto indexado por "Día-bloque" con datos de cada clase
     let horarioAsignado = $state<Record<string, any>>({});
     let periodos = $state<any[]>([]);
     let periodoSeleccionado = $state<number | null>(null);
     let cargando = $state(true);
-    let sinHorario = $state(false);
+    let sinHorario = $state(false); // true cuando no hay clases en el periodo
 
     const getHeaders = () => ({
         "Authorization": `Bearer ${localStorage.getItem('token')}`
@@ -27,11 +44,19 @@
         const res = await fetch(`${API}/academic-periods/`, { headers: getHeaders() });
         if (res.ok) {
             periodos = await res.json();
+            // Preselecciona el periodo activo automáticamente
             const activo = periodos.find(p => p.is_active);
             if (activo) periodoSeleccionado = activo.id;
         }
     }
 
+    // ------------------------------------------------------------
+    // Carga y construye el horario del docente para el periodo
+    // 1. Obtiene todos los horarios del sistema
+    // 2. Filtra por teacher_id y period_id del docente autenticado
+    // 3. Asigna colores únicos por materia usando colorMap
+    // 4. Construye el objeto grid indexado por "Día-bloque"
+    // ------------------------------------------------------------
     async function cargarHorario() {
         if (!periodoSeleccionado || !teacherId()) return;
         cargando = true;
@@ -40,6 +65,7 @@
             const res = await fetch(`${API}/schedules/`, { headers: getHeaders() });
             if (res.ok) {
                 const todos = await res.json();
+
                 // Filtrar solo los horarios de este docente y periodo
                 const misPeriodo = todos.filter((h: any) =>
                     String(h.teacher_id) === teacherId() &&
@@ -52,7 +78,8 @@
                     return;
                 }
 
-                // Asignar un color fijo por materia
+                // Asignar un color fijo por materia usando su subject_id como clave
+                // El módulo (%) evita que se agoten los colores si hay más de 8 materias
                 const colorMap: Record<number, string> = {};
                 let colorIdx = 0;
                 misPeriodo.forEach((h: any) => {
@@ -62,7 +89,8 @@
                     }
                 });
 
-                // Construir el objeto que espera ScheduleGrid: 'Día-bloque' => {materia, color, grupo}
+                // Construir objeto con formato que espera ScheduleGrid
+                // Clave: "Día-bloque" → Valor: { materia, color, grupo }
                 const grid: Record<string, any> = {};
                 misPeriodo.forEach((h: any) => {
                     const key = `${h.day_of_week}-${h.block_label}`;
@@ -81,6 +109,7 @@
         }
     }
 
+    // $effect: recarga el horario automáticamente al cambiar el periodo
     $effect(() => {
         if (periodoSeleccionado) cargarHorario();
     });
@@ -89,13 +118,14 @@
         await cargarPeriodos();
     });
 
+    // Imprime el horario usando el diálogo de impresión del navegador
     function imprimirHorario() {
         window.print();
     }
 </script>
 
 <div class="container-fluid py-4 h-100 d-flex flex-column">
-    <!-- Header -->
+    <!-- Header con selector de periodo y botón de impresión -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
             <h2 class="fw-bold mb-1">Mi Horario de Clases</h2>
@@ -118,6 +148,7 @@
     {#if cargando}
         <LoadingSpinner />
     {:else if sinHorario}
+        <!-- Estado vacío: el docente no tiene clases en el periodo -->
         <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center">
             <i class="bi bi-calendar-x fs-4 me-3"></i>
             <div>
@@ -126,13 +157,14 @@
             </div>
         </div>
     {:else}
-        <!-- Alert de estado -->
+        <!-- Confirmación de horario oficial -->
         <div class="alert alert-success border-0 shadow-sm mb-4 py-2 d-flex align-items-center">
             <i class="bi bi-check-circle-fill fs-5 me-2"></i>
             <small><strong>Horario Confirmado:</strong> Si encuentras alguna inconsistencia, contacta a tu Coordinador de Facultad.</small>
         </div>
 
-        <!-- Leyenda de materias -->
+        <!-- Leyenda visual: un badge por materia con su color asignado -->
+        <!-- filter + findIndex deduplica materias por nombre -->
         <div class="d-flex flex-wrap gap-2 mb-3">
             {#each Object.values(horarioAsignado).filter((v, i, arr) => arr.findIndex(x => x.materia === v.materia) === i) as clase}
                 <span class="badge px-3 py-2" style="background-color: {clase.color};">
@@ -141,7 +173,7 @@
             {/each}
         </div>
 
-        <!-- Grid visual -->
+        <!-- Grid visual del horario (tabla escritorio + tarjetas móvil) -->
         <div class="flex-grow-1">
             <ScheduleGrid horario={horarioAsignado} />
         </div>
@@ -149,6 +181,7 @@
 </div>
 
 <style>
+    /* Oculta la UI al imprimir: solo muestra el grid del horario */
     @media print {
         :global(.sidebar-custom), :global(.header-custom), .btn, .alert, select {
             display: none !important;

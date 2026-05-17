@@ -1,4 +1,12 @@
 <script lang="ts">
+    // ============================================================
+    // admi/docentes/+page.svelte — Gestión de Docentes
+    // ============================================================
+    // CRUD completo de docentes para el Administrador.
+    // Carga docentes, facultades, programas y roles en paralelo
+    // con Promise.all para poblar los selects del formulario.
+    // Al editar, la contraseña se vacía por seguridad.
+    // ============================================================
     import { onMount } from 'svelte';
     import PageHeader from "$lib/components/PageHeader.svelte";
     import DataTable from "$lib/components/DataTable.svelte";
@@ -13,20 +21,15 @@
     let docentes = $state<any[]>([]);
     let facultades = $state<any[]>([]);
     let programas = $state<any[]>([]);
-    let roles = $state<any[]>([]);
+    let roles = $state<any[]>([]);    // Para poblar el select de roles
     let cargando = $state(true);
     let editando = $state(false);
     let idSeleccionado = $state<number | null>(null);
     let nombreBorrar = $state("");
 
     let formulario = $state({
-        first_name: "",
-        last_name: "",
-        email: "",
-        password_hash: "",
-        role_id: 0,
-        program_id: 0,
-        is_active: true
+        first_name: "", last_name: "", email: "",
+        password_hash: "", role_id: 0, program_id: 0, is_active: true
     });
 
     const headers = [
@@ -41,6 +44,7 @@
         "Content-Type": "application/json"
     });
 
+    // Carga los 4 recursos en paralelo para mayor eficiencia
     async function cargarDatos() {
         cargando = true;
         try {
@@ -50,7 +54,6 @@
                 fetch(`${API}/programs/`, { headers: getHeaders() }),
                 fetch(`${API}/roles/`, { headers: getHeaders() })
             ]);
-
             if (rD.ok) docentes = await rD.json();
             if (rF.ok) facultades = await rF.json();
             if (rP.ok) programas = await rP.json();
@@ -72,13 +75,9 @@
         editando = true;
         idSeleccionado = u.id;
         formulario = {
-            first_name: u.first_name,
-            last_name: u.last_name,
-            email: u.email,
-            password_hash: "",
-            role_id: u.role_id,
-            program_id: u.program_id,
-            is_active: u.is_active
+            first_name: u.first_name, last_name: u.last_name, email: u.email,
+            password_hash: "", // Vacío por seguridad al editar
+            role_id: u.role_id, program_id: u.program_id, is_active: u.is_active
         };
     }
 
@@ -95,8 +94,7 @@
     async function eliminar() {
         if (!idSeleccionado) return;
         const res = await fetch(`${API}/users/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: getHeaders()
+            method: "DELETE", headers: getHeaders()
         });
         if (res.ok) await cargarDatos();
     }
@@ -104,11 +102,11 @@
     onMount(cargarDatos);
 </script>
 
-<PageHeader 
-    title="Docentes CUL" 
+<PageHeader
+    title="Docentes CUL"
     subtitle="Administración de docentes - Universidad CUL"
-    buttonText="Nuevo Docente" 
-    onButtonClick={prepararNuevo} 
+    buttonText="Nuevo Docente"
+    onButtonClick={prepararNuevo}
 />
 
 {#if cargando}
@@ -122,12 +120,13 @@
                     <div class="small text-muted">{u.email}</div>
                 </td>
                 <td>
+                    <!-- program_name y faculty_name obtenidos por JOIN triple en la API -->
                     <div class="fw-semibold text-primary">{u.program_name || 'N/A'}</div>
                     <div class="small text-muted">{u.faculty_name || 'N/A'}</div>
                 </td>
                 <td><StatusBadge active={u.is_active} /></td>
                 <td class="text-center">
-                    <TableAction 
+                    <TableAction
                         itemName={`${u.first_name} ${u.last_name}`}
                         onEdit={() => prepararEdicion(u)}
                         onDelete={() => { idSeleccionado = u.id; nombreBorrar = `${u.first_name} ${u.last_name}`; }}
@@ -152,14 +151,13 @@
             <label for="email" class="form-label small fw-bold">Correo Institucional</label>
             <input id="email" type="email" class="form-control" bind:value={formulario.email} placeholder="usuario@cul.edu.co" required>
         </div>
-
+        <!-- Contraseña: solo visible al crear, oculta al editar -->
         {#if !editando}
             <div class="col-12">
                 <label for="password_hash" class="form-label small fw-bold">Contraseña</label>
                 <input id="password_hash" type="password" class="form-control" bind:value={formulario.password_hash} required>
             </div>
         {/if}
-
         <div class="col-md-6">
             <label for="role_id" class="form-label small fw-bold">Rol</label>
             <select id="role_id" class="form-select" bind:value={formulario.role_id} required>
@@ -169,7 +167,6 @@
                 {/each}
             </select>
         </div>
-
         <div class="col-md-6">
             <label for="program_id" class="form-label small fw-bold">Programa Académico</label>
             <select id="program_id" class="form-select" bind:value={formulario.program_id} required>
@@ -179,7 +176,6 @@
                 {/each}
             </select>
         </div>
-
         <div class="col-12 mt-3">
             <div class="form-check form-switch bg-light p-2 rounded border">
                 <input class="form-check-input ms-1" type="checkbox" id="user_active" bind:checked={formulario.is_active}>

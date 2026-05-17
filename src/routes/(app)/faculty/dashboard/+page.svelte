@@ -1,4 +1,11 @@
 <script lang="ts">
+    // ============================================================
+    // faculty/dashboard/+page.svelte — Dashboard del Coordinador
+    // ============================================================
+    // Página principal del coordinador. Carga métricas globales
+    // y muestra accesos rápidos a disponibilidad y horarios.
+    // También muestra el periodo académico activo si existe.
+    // ============================================================
     import { onMount } from 'svelte';
     import { userRole, userName } from "$lib/stores/user";
     import StatsGrid from '$lib/components/StatsGrid.svelte';
@@ -10,7 +17,7 @@
         docentes: 0, materias: 0, horarios: 0,
         disponibilidades: 0, periodos: 0
     });
-    let periodoActivo = $state<string | null>(null);
+    let periodoActivo = $state<string | null>(null); // Nombre del periodo activo para mostrar en el banner
     let cargando = $state(true);
     let role = $derived($userRole);
     let name = $derived($userName);
@@ -23,6 +30,7 @@
             if (res.ok) {
                 const data = await res.json();
                 stats = data;
+                // Extrae el periodo actual retornado por la API
                 periodoActivo = data.periodo_actual ?? null;
             }
         } catch (error) {
@@ -38,14 +46,17 @@
 {#if cargando}
     <LoadingSpinner />
 {:else}
+    <!-- Saludo personalizado con el nombre del coordinador -->
     <div class="mb-4">
         <h4 class="fw-bold mb-0">Bienvenido, {name ?? 'Coordinador'}</h4>
         <p class="text-muted small">Panel de Coordinación — Universidad CUL</p>
     </div>
 
+    <!-- Tarjetas de métricas filtradas por rol coordinador -->
     <StatsGrid {role} data={stats} />
 
     <div class="row mt-4">
+        <!-- Acceso rápido a disponibilidad docente -->
         <div class="col-md-6 mb-3">
             <div class="card border-0 shadow-sm p-4 h-100">
                 <h5 class="fw-bold mb-2 text-primary">
@@ -59,6 +70,7 @@
                 </div>
             </div>
         </div>
+        <!-- Acceso rápido a horarios y docentes -->
         <div class="col-md-6 mb-3">
             <div class="card border-0 shadow-sm p-4 h-100">
                 <h5 class="fw-bold mb-2 text-success">
@@ -73,9 +85,10 @@
                 </div>
             </div>
         </div>
+        <!-- Banner del periodo activo: solo visible si la API retorna un periodo_actual -->
         {#if periodoActivo}
         <div class="col-12 mb-3">
-            <div class="card border-0 shadow-sm p-3 bg-light">
+            <div class="card border-0 shadow-sm p-3 ">
                 <div class="d-flex align-items-center gap-3">
                     <i class="bi bi-calendar-check fs-4 text-warning"></i>
                     <div>

@@ -1,4 +1,12 @@
 <script lang="ts">
+    // ============================================================
+    // admi/disponibilidad/+page.svelte — Gestión de Disponibilidad
+    // ============================================================
+    // CRUD completo de disponibilidad docente para el Administrador.
+    // Permite registrar manualmente los bloques de tiempo disponibles
+    // de cada docente en un periodo académico específico.
+    // Carga lista, docentes y periodos en paralelo con Promise.all.
+    // ============================================================
     import { onMount } from 'svelte';
     import PageHeader from "$lib/components/PageHeader.svelte";
     import DataTable from "$lib/components/DataTable.svelte";
@@ -10,21 +18,19 @@
     const API = "https://gestion-de-horarios-1.onrender.com";
 
     // --- ESTADOS ---
-    let lista = $state<any[]>([]);
-    let docentes = $state<any[]>([]);
-    let periodos = $state<any[]>([]);
+    let lista = $state<any[]>([]);      // Lista de disponibilidades registradas
+    let docentes = $state<any[]>([]);   // Para poblar el select de docentes
+    let periodos = $state<any[]>([]);   // Para poblar el select de periodos
     let cargando = $state(true);
     let editando = $state(false);
     let idSeleccionado = $state<number | null>(null);
     let nombreDocenteBorrar = $state("");
 
+    // Días disponibles para el select del formulario
     const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
 
     let formulario = $state({
-        teacher_id: "",
-        period_id: "",
-        day_of_week: "Lunes",
-        block_label: ""
+        teacher_id: "", period_id: "", day_of_week: "Lunes", block_label: ""
     });
 
     const headers = [
@@ -40,6 +46,7 @@
         "Content-Type": "application/json"
     });
 
+    // Carga los 3 recursos en paralelo
     async function cargarDatos() {
         cargando = true;
         try {
@@ -48,7 +55,6 @@
                 fetch(`${API}/users/teachers`, { headers: getHeaders() }),
                 fetch(`${API}/academic-periods/`, { headers: getHeaders() })
             ]);
-
             if (resLista.ok) lista = await resLista.json();
             if (resDocentes.ok) docentes = await resDocentes.json();
             if (resPeriodos.ok) periodos = await resPeriodos.json();
@@ -69,31 +75,24 @@
         editando = true;
         idSeleccionado = item.id;
         formulario = {
-            teacher_id: item.teacher_id,
-            period_id: item.period_id,
-            day_of_week: item.day_of_week,
-            block_label: item.block_label
+            teacher_id: item.teacher_id, period_id: item.period_id,
+            day_of_week: item.day_of_week, block_label: item.block_label
         };
     }
 
     async function guardar() {
-        const url = editando
-            ? `${API}/availability/${idSeleccionado}`
-            : `${API}/availability/`;
-
+        const url = editando ? `${API}/availability/${idSeleccionado}` : `${API}/availability/`;
         const res = await fetch(url, {
             method: editando ? "PUT" : "POST",
             headers: getHeaders(),
             body: JSON.stringify(formulario)
         });
-
         if (res.ok) await cargarDatos();
     }
 
     async function eliminar() {
         const res = await fetch(`${API}/availability/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: getHeaders()
+            method: "DELETE", headers: getHeaders()
         });
         if (res.ok) await cargarDatos();
     }
@@ -101,11 +100,11 @@
     onMount(cargarDatos);
 </script>
 
-<PageHeader 
-    title="Disponibilidad Docente" 
-    subtitle="Panel Administrativo - Universidad CUL" 
-    buttonText="Agregar Disponibilidad" 
-    onButtonClick={prepararNuevo} 
+<PageHeader
+    title="Disponibilidad Docente"
+    subtitle="Panel Administrativo - Universidad CUL"
+    buttonText="Agregar Disponibilidad"
+    onButtonClick={prepararNuevo}
 />
 
 {#if cargando}
@@ -128,17 +127,12 @@
                         {item.block_label || 'Sin horario'}
                     </span>
                 </td>
-                <td>
-                    <small class="fw-medium text-secondary">{item.period_name || 'N/A'}</small>
-                </td>
+                <td><small class="fw-medium text-secondary">{item.period_name || 'N/A'}</small></td>
                 <td class="text-end pe-4">
-                    <TableAction 
+                    <TableAction
                         itemName={`Franja de ${item.teacher_name || 'docente'}`}
                         onEdit={() => prepararEdicion(item)}
-                        onDelete={() => { 
-                            idSeleccionado = item.id;
-                            nombreDocenteBorrar = item.teacher_name || 'docente';
-                        }}
+                        onDelete={() => { idSeleccionado = item.id; nombreDocenteBorrar = item.teacher_name || 'docente'; }}
                     />
                 </td>
             </tr>
@@ -157,7 +151,6 @@
                 {/each}
             </select>
         </div>
-
         <div class="col-12">
             <label for="f_period" class="form-label small fw-bold">PERIODO ACADÉMICO</label>
             <select id="f_period" class="form-select" bind:value={formulario.period_id} required>
@@ -167,7 +160,6 @@
                 {/each}
             </select>
         </div>
-
         <div class="col-12">
             <label for="f_day" class="form-label small fw-bold">DÍA DE LA SEMANA</label>
             <select id="f_day" class="form-select" bind:value={formulario.day_of_week} required>
@@ -176,18 +168,16 @@
                 {/each}
             </select>
         </div>
-
         <div class="col-12">
-            <label for="f_block" class="form-label small fw-bold">ETIQUETA DE BLOQUE (EJ. 07:00-08:30)</label>
+            <label for="f_block" class="form-label small fw-bold">ETIQUETA DE BLOQUE</label>
             <input type="text" id="f_block" class="form-control"
-                   bind:value={formulario.block_label}
-                   placeholder="Ej: 07:00-08:30" required />
+                bind:value={formulario.block_label} placeholder="Ej: 07:00-08:30" required />
         </div>
     </div>
 </FormModal>
 
-<ConfirmDeleteModal 
-    id="modalEliminar" 
-    itemName={`la disponibilidad de ${nombreDocenteBorrar}`} 
-    onDelete={eliminar} 
+<ConfirmDeleteModal
+    id="modalEliminar"
+    itemName={`la disponibilidad de ${nombreDocenteBorrar}`}
+    onDelete={eliminar}
 />

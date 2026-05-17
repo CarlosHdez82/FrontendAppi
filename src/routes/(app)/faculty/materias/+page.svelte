@@ -1,4 +1,11 @@
 <script lang="ts">
+    // ============================================================
+    // faculty/materias/+page.svelte — Materias (Solo lectura)
+    // ============================================================
+    // Vista de consulta de materias para el Coordinador.
+    // Muestra nombre, créditos y programa de cada materia.
+    // No permite crear, editar ni eliminar materias.
+    // ============================================================
     import { onMount } from 'svelte';
     import PageHeader from "$lib/components/PageHeader.svelte";
     import DataTable from "$lib/components/DataTable.svelte";
@@ -14,6 +21,7 @@
         { label: "Materia", class: "ps-4" },
         { label: "Créditos" },
         { label: "Programa" }
+        // Sin columna Acciones → solo lectura
     ];
 
     async function cargarDatos() {
@@ -34,9 +42,11 @@
     onMount(cargarDatos);
 </script>
 
-<PageHeader 
-    title="Materias" 
+<PageHeader
+    title="Materias"
     subtitle="Catálogo de asignaturas — Universidad CUL"
+    buttonText=""
+    onButtonClick={() => {}}
 />
 
 {#if cargando}
@@ -49,6 +59,7 @@
             <tr>
                 <td class="ps-4 fw-bold text-primary">{m.name}</td>
                 <td><span class="badge bg-secondary">{m.credits} Créditos</span></td>
+                <!-- program_name obtenido por JOIN en la API -->
                 <td class="text-muted">{m.program_name || 'N/A'}</td>
             </tr>
         {/snippet}

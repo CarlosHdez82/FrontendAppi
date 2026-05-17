@@ -1,4 +1,12 @@
 <script lang="ts">
+    // ============================================================
+    // faculty/periodos/+page.svelte — Periodos (Solo lectura)
+    // ============================================================
+    // Vista de consulta de periodos académicos para el Coordinador.
+    // Muestra nombre, fechas de inicio/fin y estado.
+    // Maneja fechas opcionales mostrando "Sin fecha" cuando no existen.
+    // No permite crear, editar ni eliminar periodos.
+    // ============================================================
     import { onMount } from 'svelte';
     import PageHeader from "$lib/components/PageHeader.svelte";
     import DataTable from "$lib/components/DataTable.svelte";
@@ -16,6 +24,7 @@
         { label: "Fecha Inicio" },
         { label: "Fecha Fin" },
         { label: "Estado", class: "text-center" }
+        // Sin columna Acciones → solo lectura
     ];
 
     async function cargarDatos() {
@@ -36,9 +45,11 @@
     onMount(cargarDatos);
 </script>
 
-<PageHeader 
-    title="Periodos Académicos" 
+<PageHeader
+    title="Periodos Académicos"
     subtitle="Semestres vigentes — Universidad CUL"
+    buttonText=""
+    onButtonClick={() => {}}
 />
 
 {#if cargando}
@@ -51,6 +62,7 @@
             <tr>
                 <td class="ps-4 fw-bold text-dark">{p.name}</td>
                 <td>
+                    <!-- Muestra "Sin fecha" si start_date es null u opcional -->
                     {#if p.start_date}
                         <i class="bi bi-calendar-event me-1 text-muted"></i>{p.start_date}
                     {:else}

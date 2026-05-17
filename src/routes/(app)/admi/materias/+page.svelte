@@ -1,4 +1,11 @@
 <script lang="ts">
+    // ============================================================
+    // admi/materias/+page.svelte — Gestión de Materias
+    // ============================================================
+    // CRUD completo de materias académicas para el Administrador.
+    // Carga materias y programas en paralelo con Promise.all
+    // para poblar la tabla y el select del formulario.
+    // ============================================================
     import { onMount } from 'svelte';
     import PageHeader from "$lib/components/PageHeader.svelte";
     import DataTable from "$lib/components/DataTable.svelte";
@@ -10,18 +17,14 @@
     const API = "https://gestion-de-horarios-1.onrender.com";
 
     // --- ESTADOS ---
-    let materias = $state([]);
-    let programas = $state([]);
+    let materias = $state<any[]>([]);
+    let programas = $state<any[]>([]); // Para poblar el select del formulario
     let cargando = $state(true);
     let editando = $state(false);
     let idSeleccionado = $state(null);
     let nombreBorrar = $state("");
 
-    let formulario = $state({
-        name: "",
-        credits: 1,
-        program_id: 0
-    });
+    let formulario = $state({ name: "", credits: 1, program_id: 0 });
 
     const headers = [
         { label: "Materia", class: "ps-4" },
@@ -35,6 +38,7 @@
         "Content-Type": "application/json"
     });
 
+    // Carga materias y programas en paralelo
     async function cargarTodo() {
         cargando = true;
         try {
@@ -64,10 +68,7 @@
     }
 
     async function guardar() {
-        const url = editando
-            ? `${API}/subjects/${idSeleccionado}`
-            : `${API}/subjects/`;
-
+        const url = editando ? `${API}/subjects/${idSeleccionado}` : `${API}/subjects/`;
         const res = await fetch(url, {
             method: editando ? "PUT" : "POST",
             headers: getHeaders(),
@@ -78,8 +79,7 @@
 
     async function eliminar() {
         const res = await fetch(`${API}/subjects/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: getHeaders()
+            method: "DELETE", headers: getHeaders()
         });
         if (res.ok) await cargarTodo();
     }
@@ -87,11 +87,11 @@
     onMount(cargarTodo);
 </script>
 
-<PageHeader 
-    title="Materias CUL" 
-    subtitle="Catálogo de Asignaturas" 
-    buttonText="Nueva Materia" 
-    onButtonClick={prepararNuevo} 
+<PageHeader
+    title="Materias CUL"
+    subtitle="Catálogo de Asignaturas"
+    buttonText="Nueva Materia"
+    onButtonClick={prepararNuevo}
 />
 
 {#if cargando}
@@ -102,9 +102,10 @@
             <tr>
                 <td class="ps-4 fw-bold text-primary">{m.name}</td>
                 <td><span class="badge bg-secondary">{m.credits} Créditos</span></td>
+                <!-- program_name obtenido por JOIN en la API -->
                 <td>{m.program_name}</td>
                 <td class="text-center">
-                    <TableAction 
+                    <TableAction
                         itemName={m.name}
                         onEdit={() => prepararEdicion(m)}
                         onDelete={() => { idSeleccionado = m.id; nombreBorrar = m.name; }}

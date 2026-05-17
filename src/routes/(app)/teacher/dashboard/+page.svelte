@@ -1,4 +1,11 @@
 <script lang="ts">
+    // ============================================================
+    // teacher/dashboard/+page.svelte — Dashboard del Docente
+    // ============================================================
+    // Página principal del docente. Muestra métricas relevantes
+    // y accesos rápidos a disponibilidad, horario y materias.
+    // También muestra el periodo académico activo si existe.
+    // ============================================================
     import { onMount } from 'svelte';
     import { userRole, userName } from "$lib/stores/user";
     import StatsGrid from '$lib/components/StatsGrid.svelte';
@@ -36,14 +43,17 @@
 {#if cargando}
     <LoadingSpinner />
 {:else}
+    <!-- Saludo personalizado con el nombre del docente -->
     <div class="mb-4">
         <h4 class="fw-bold mb-0">Bienvenido, {name ?? 'Docente'}</h4>
         <p class="text-muted small">Panel Docente — Universidad CUL</p>
     </div>
 
+    <!-- Tarjetas de métricas filtradas por rol docente -->
     <StatsGrid {role} data={stats} />
 
     <div class="row mt-4">
+        <!-- Acceso rápido a disponibilidad del docente -->
         <div class="col-md-6 mb-3">
             <div class="card border-0 shadow-sm p-4 h-100">
                 <h5 class="fw-bold mb-2" style="color: #222F56;">
@@ -57,6 +67,7 @@
                 </a>
             </div>
         </div>
+        <!-- Acceso rápido a horario y materias -->
         <div class="col-md-6 mb-3">
             <div class="card border-0 shadow-sm p-4 h-100">
                 <h5 class="fw-bold mb-2 text-success">
@@ -71,9 +82,10 @@
                 </div>
             </div>
         </div>
+        <!-- Banner del periodo activo: visible solo si la API retorna periodo_actual -->
         {#if periodoActivo}
         <div class="col-12 mb-3">
-            <div class="card border-0 shadow-sm p-3 bg-light">
+            <div class="card border-0 shadow-sm p-3">
                 <div class="d-flex align-items-center gap-3">
                     <i class="bi bi-calendar-check fs-4 text-warning"></i>
                     <div>

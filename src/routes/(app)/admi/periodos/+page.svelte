@@ -1,4 +1,11 @@
 <script lang="ts">
+    // ============================================================
+    // admi/periodos/+page.svelte — Gestión de Periodos Académicos
+    // ============================================================
+    // CRUD completo de periodos académicos (semestres).
+    // Usa spread operator {...p} para copiar todos los campos
+    // del registro al formulario de edición de una vez.
+    // ============================================================
     import { onMount } from 'svelte';
     import PageHeader from "$lib/components/PageHeader.svelte";
     import DataTable from "$lib/components/DataTable.svelte";
@@ -17,12 +24,7 @@
     let idSeleccionado = $state(null);
     let nombreBorrar = $state("");
 
-    let formulario = $state({
-        name: "",
-        start_date: "",
-        end_date: "",
-        is_active: true
-    });
+    let formulario = $state({ name: "", start_date: "", end_date: "", is_active: true });
 
     const headers = [
         { label: "Nombre", class: "ps-4" },
@@ -55,6 +57,7 @@
         formulario = { name: "", start_date: "", end_date: "", is_active: true };
     }
 
+    // Spread {...p} copia todos los campos del periodo al formulario
     function prepararEdicion(p: any) {
         editando = true;
         idSeleccionado = p.id;
@@ -62,10 +65,7 @@
     }
 
     async function guardar() {
-        const url = editando
-            ? `${API}/academic-periods/${idSeleccionado}`
-            : `${API}/academic-periods/`;
-
+        const url = editando ? `${API}/academic-periods/${idSeleccionado}` : `${API}/academic-periods/`;
         const res = await fetch(url, {
             method: editando ? "PUT" : "POST",
             headers: getHeaders(),
@@ -76,8 +76,7 @@
 
     async function eliminar() {
         const res = await fetch(`${API}/academic-periods/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: getHeaders()
+            method: "DELETE", headers: getHeaders()
         });
         if (res.ok) await cargarPeriodos();
     }
@@ -85,11 +84,11 @@
     onMount(cargarPeriodos);
 </script>
 
-<PageHeader 
-    title="Periodos Académicos" 
-    subtitle="Configuración de semestres y fechas límite" 
-    buttonText="Nuevo Periodo" 
-    onButtonClick={prepararNuevo} 
+<PageHeader
+    title="Periodos Académicos"
+    subtitle="Configuración de semestres y fechas límite"
+    buttonText="Nuevo Periodo"
+    onButtonClick={prepararNuevo}
 />
 
 {#if cargando}
@@ -101,11 +100,9 @@
                 <td class="ps-4 fw-bold text-dark">{p.name}</td>
                 <td><i class="bi bi-calendar-event me-2"></i>{p.start_date}</td>
                 <td><i class="bi bi-calendar-check me-2"></i>{p.end_date}</td>
-                <td class="text-center">
-                    <StatusBadge active={p.is_active} />
-                </td>
+                <td class="text-center"><StatusBadge active={p.is_active} /></td>
                 <td class="text-end pe-4">
-                    <TableAction 
+                    <TableAction
                         itemName={p.name}
                         onEdit={() => prepararEdicion(p)}
                         onDelete={() => { idSeleccionado = p.id; nombreBorrar = p.name; }}

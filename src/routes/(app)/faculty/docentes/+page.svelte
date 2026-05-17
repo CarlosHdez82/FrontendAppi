@@ -1,4 +1,11 @@
 <script lang="ts">
+    // ============================================================
+    // faculty/docentes/+page.svelte — Docentes (Solo lectura)
+    // ============================================================
+    // Vista de consulta de docentes para el Coordinador.
+    // Muestra nombre, correo, programa/facultad y estado.
+    // No permite crear, editar ni eliminar docentes.
+    // ============================================================
     import { onMount } from 'svelte';
     import PageHeader from "$lib/components/PageHeader.svelte";
     import DataTable from "$lib/components/DataTable.svelte";
@@ -16,6 +23,7 @@
         { label: "Correo" },
         { label: "Programa / Facultad" },
         { label: "Estado" }
+        // Sin columna Acciones → solo lectura
     ];
 
     const getHeaders = () => ({
@@ -25,6 +33,7 @@
     async function cargarDatos() {
         cargando = true;
         try {
+            // GET /users/teachers filtra solo usuarios con rol docente
             const res = await fetch(`${API}/users/teachers`, { headers: getHeaders() });
             if (res.ok) docentes = await res.json();
             else error = "No se pudieron cargar los docentes";
@@ -38,9 +47,11 @@
     onMount(cargarDatos);
 </script>
 
-<PageHeader 
-    title="Docentes" 
+<PageHeader
+    title="Docentes"
     subtitle="Listado de docentes — Universidad CUL"
+    buttonText=""
+    onButtonClick={() => {}}
 />
 
 {#if cargando}
@@ -56,6 +67,7 @@
                 </td>
                 <td class="text-muted small">{u.email}</td>
                 <td>
+                    <!-- program_name y faculty_name obtenidos por JOIN triple en la API -->
                     <div class="fw-semibold text-primary small">{u.program_name || 'N/A'}</div>
                     <div class="text-muted small">{u.faculty_name || 'N/A'}</div>
                 </td>

@@ -1,4 +1,22 @@
 <script lang="ts">
+    // ============================================================
+    // faculty/horarios/+page.svelte — Horarios del Coordinador
+    // ============================================================
+    // Módulo más avanzado del Coordinador. Permite asignar horarios
+    // con un modal especial de dos columnas:
+    //   - Izquierda: formulario de asignación
+    //   - Derecha:   grid visual de disponibilidad del docente
+    //
+    // Funcionalidades especiales:
+    // - Carga la disponibilidad del docente al cambiar docente/periodo
+    // - Permite seleccionar bloques haciendo clic en el grid
+    // - Muestra en verde los bloques ya asignados al docente
+    // - Valida que todos los campos obligatorios estén completos
+    // - Maneja errores de la API mostrándolos en el formulario
+    //
+    // $effect() observa los cambios de teacher_id y period_id
+    // para recargar automáticamente la disponibilidad del docente.
+    // ============================================================
     import { onMount } from 'svelte';
     import PageHeader from "$lib/components/PageHeader.svelte";
     import DataTable from "$lib/components/DataTable.svelte";
@@ -16,37 +34,41 @@
     let periodos = $state<any[]>([]);
     let cargando = $state(true);
 
-    // --- MODAL FORMULARIO ---
-    let modalAbierto = $state(false);
+    // --- CONTROL DEL MODAL ---
+    let modalAbierto = $state(false);   // Controla visibilidad del modal personalizado
     let editando = $state(false);
     let idSeleccionado = $state<number | null>(null);
     let itemAEliminar = $state("");
-    let guardando = $state(false);
-    let errorForm = $state("");
+    let guardando = $state(false);      // Muestra spinner mientras guarda
+    let errorForm = $state("");         // Mensaje de error dentro del modal
 
-    // --- DISPONIBILIDAD DEL DOCENTE SELECCIONADO ---
+    // --- DISPONIBILIDAD DEL DOCENTE ---
+    // Set con claves "Dia-Bloque" de los bloques disponibles del docente seleccionado
     let disponibilidadDocente = $state(new Set<string>());
     let cargandoDisponibilidad = $state(false);
 
     const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
     let formulario = $state({
-        teacher_id: "" as any,
-        subject_id: "" as any,
-        period_id: "" as any,
-        day_of_week: "",
-        block_label: "",
-        group_code: "A"
+        teacher_id: "" as any, subject_id: "" as any, period_id: "" as any,
+        day_of_week: "", block_label: "", group_code: "A"
     });
 
-    // Clave del bloque seleccionado en el form para resaltarlo en el grid
+    // ------------------------------------------------------------
+    // Clave del bloque actualmente seleccionado en el formulario
+    // Se usa para resaltarlo en el grid de disponibilidad
+    // ------------------------------------------------------------
     let bloqueEnForm = $derived(
         formulario.day_of_week && formulario.block_label
             ? `${formulario.day_of_week}-${formulario.block_label}`
             : ""
     );
 
-    // Bloques ya asignados al docente en ese periodo (para mostrarlos en verde en el grid)
+    // ------------------------------------------------------------
+    // Set de bloques ya asignados al docente en ese periodo
+    // Se muestra en verde en el grid para evitar conflictos
+    // Se excluye el horario actual si estamos editando
+    // ------------------------------------------------------------
     let bloquesAsignados = $derived(
         (!formulario.teacher_id || !formulario.period_id)
             ? new Set<string>()
@@ -55,7 +77,7 @@
                     .filter((h: any) =>
                         String(h.teacher_id) === String(formulario.teacher_id) &&
                         String(h.period_id) === String(formulario.period_id) &&
-                        (!editando || h.id !== idSeleccionado)
+                        (!editando || h.id !== idSeleccionado) // Excluye el horario que se está editando
                     )
                     .map((h: any) => `${h.day_of_week}-${h.block_label}`)
               )
@@ -74,7 +96,7 @@
         "Content-Type": "application/json"
     });
 
-    // --- CARGA INICIAL ---
+    // Carga los 4 recursos en paralelo
     async function cargarDatos() {
         cargando = true;
         try {
@@ -95,7 +117,11 @@
         }
     }
 
-    // --- CARGAR DISPONIBILIDAD DEL DOCENTE ---
+    // ------------------------------------------------------------
+    // Carga la disponibilidad del docente seleccionado
+    // GET /availability/teacher/{teacher_id}/{period_id}
+    // Construye un Set con claves "Dia-Bloque" para búsqueda O(1)
+    // ------------------------------------------------------------
     async function cargarDisponibilidadDocente() {
         if (!formulario.teacher_id || !formulario.period_id) {
             disponibilidadDocente = new Set();
@@ -109,6 +135,7 @@
             );
             if (res.ok) {
                 const data = await res.json();
+                // Construye claves "Dia-Bloque" para cada bloque disponible
                 disponibilidadDocente = new Set(data.map((d: any) => `${d.day}-${d.block}`));
             }
         } catch (e) {
@@ -118,14 +145,16 @@
         }
     }
 
-    // Recargar disponibilidad cuando cambia docente o periodo
+    // ------------------------------------------------------------
+    // $effect: recarga la disponibilidad automáticamente cuando
+    // cambia el docente o el periodo en el formulario
+    // ------------------------------------------------------------
     $effect(() => {
         if (formulario.teacher_id && formulario.period_id) {
             cargarDisponibilidadDocente();
         }
     });
 
-    // --- ACCIONES ---
     function abrirNuevo() {
         editando = false;
         idSeleccionado = null;
@@ -140,18 +169,15 @@
         idSeleccionado = h.id;
         errorForm = "";
         formulario = {
-            teacher_id: h.teacher_id,
-            subject_id: h.subject_id,
-            period_id: h.period_id,
-            day_of_week: h.day_of_week,
-            block_label: h.block_label,
-            group_code: h.group_code || "A"
+            teacher_id: h.teacher_id, subject_id: h.subject_id, period_id: h.period_id,
+            day_of_week: h.day_of_week, block_label: h.block_label, group_code: h.group_code || "A"
         };
         modalAbierto = true;
     }
 
     async function guardar() {
         errorForm = "";
+        // Validación de campos obligatorios antes de enviar a la API
         if (!formulario.teacher_id || !formulario.subject_id || !formulario.period_id || !formulario.day_of_week || !formulario.block_label) {
             errorForm = "Completa todos los campos obligatorios.";
             return;
@@ -168,6 +194,7 @@
                 modalAbierto = false;
                 await cargarDatos();
             } else {
+                // Muestra el detalle del error retornado por FastAPI
                 const err = await res.json();
                 errorForm = err.detail || "Error al guardar el horario.";
             }
@@ -180,15 +207,18 @@
 
     async function eliminar() {
         const res = await fetch(`${API}/schedules/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: getHeaders()
+            method: "DELETE", headers: getHeaders()
         });
         if (res.ok) await cargarDatos();
     }
 
-    // Seleccionar bloque haciendo click en el grid
+    // ------------------------------------------------------------
+    // Selecciona un bloque al hacer clic en el grid de disponibilidad
+    // Solo acepta bloques que el docente marcó como disponibles
+    // Extrae día y bloque del ID compuesto "Dia-Bloque"
+    // ------------------------------------------------------------
     function seleccionarBloque(bloqueId: string) {
-        if (!disponibilidadDocente.has(bloqueId)) return; // solo si está disponible
+        if (!disponibilidadDocente.has(bloqueId)) return;
         const sep = bloqueId.indexOf('-');
         formulario.day_of_week = bloqueId.substring(0, sep);
         formulario.block_label = bloqueId.substring(sep + 1);
@@ -197,11 +227,11 @@
     onMount(cargarDatos);
 </script>
 
-<PageHeader 
-    title="Horarios Docentes" 
-    subtitle="Coordinación — Universidad CUL" 
-    buttonText="Nuevo Horario" 
-    onButtonClick={abrirNuevo} 
+<PageHeader
+    title="Horarios Docentes"
+    subtitle="Coordinación — Universidad CUL"
+    buttonText="Nuevo Horario"
+    onButtonClick={abrirNuevo}
 />
 
 {#if cargando}
@@ -228,7 +258,7 @@
                 </td>
                 <td class="text-muted small">{h.period_name || 'N/A'}</td>
                 <td class="text-end pe-4">
-                    <TableAction 
+                    <TableAction
                         itemName={`Horario de ${h.subject_name || 'materia'}`}
                         onEdit={() => abrirEdicion(h)}
                         onDelete={() => { idSeleccionado = h.id; itemAEliminar = `${h.subject_name} (${h.teacher_name})`; }}
@@ -239,13 +269,14 @@
     </DataTable>
 {/if}
 
-<!-- ===== MODAL DE ASIGNACIÓN ===== -->
+<!-- ===== MODAL PERSONALIZADO DE DOS COLUMNAS ===== -->
+<!-- Se usa modal nativo de Svelte en lugar de Bootstrap para mayor control -->
 {#if modalAbierto}
 <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
         <div class="modal-content border-0 shadow-lg">
 
-            <!-- Header -->
+            <!-- Header con color azul institucional CUL -->
             <div class="modal-header border-0 pb-0" style="background-color: #222F56;">
                 <div>
                     <h5 class="modal-title text-white fw-bold mb-0">
@@ -254,7 +285,7 @@
                     </h5>
                     <small class="text-white-50">Selecciona docente y periodo para ver su disponibilidad</small>
                 </div>
-                <button class="btn-close btn-close-white" onclick={() => modalAbierto = false}></button>
+                <button class="btn-close btn-close-white" aria-label="Cerrar modal" onclick={() => modalAbierto = false}></button>
             </div>
 
             <div class="modal-body p-0">
@@ -271,10 +302,9 @@
                         {/if}
 
                         <div class="row g-3">
-                            <!-- Docente -->
                             <div class="col-12">
-                                <label class="form-label small fw-bold">DOCENTE *</label>
-                                <select class="form-select form-select-sm" bind:value={formulario.teacher_id} required>
+                                <label for="f_teacher" class="form-label small fw-bold">DOCENTE *</label>
+                                <select id="f_teacher" class="form-select form-select-sm" bind:value={formulario.teacher_id} required>
                                     <option value="" disabled>Seleccione docente...</option>
                                     {#each docentes as d}
                                         <option value={d.id}>{d.first_name} {d.last_name}</option>
@@ -282,21 +312,20 @@
                                 </select>
                             </div>
 
-                            <!-- Periodo -->
                             <div class="col-12">
-                                <label class="form-label small fw-bold">PERIODO *</label>
-                                <select class="form-select form-select-sm" bind:value={formulario.period_id} required>
+                                <label for="f_period" class="form-label small fw-bold">PERIODO *</label>
+                                <select id="f_period" class="form-select form-select-sm" bind:value={formulario.period_id} required>
                                     <option value="" disabled>Seleccione periodo...</option>
                                     {#each periodos as p}
+                                        <!-- Indica visualmente cuál periodo está activo -->
                                         <option value={p.id}>{p.name}{p.is_active ? ' (activo)' : ''}</option>
                                     {/each}
                                 </select>
                             </div>
 
-                            <!-- Materia -->
                             <div class="col-12">
-                                <label class="form-label small fw-bold">ASIGNATURA *</label>
-                                <select class="form-select form-select-sm" bind:value={formulario.subject_id} required>
+                                <label for="f_subject" class="form-label small fw-bold">ASIGNATURA *</label>
+                                <select id="f_subject" class="form-select form-select-sm" bind:value={formulario.subject_id} required>
                                     <option value="" disabled>Seleccione materia...</option>
                                     {#each materias as m}
                                         <option value={m.id}>{m.name}</option>
@@ -304,10 +333,9 @@
                                 </select>
                             </div>
 
-                            <!-- Día -->
                             <div class="col-12">
-                                <label class="form-label small fw-bold">DÍA *</label>
-                                <select class="form-select form-select-sm" bind:value={formulario.day_of_week} required>
+                                <label for="f_day" class="form-label small fw-bold">DÍA *</label>
+                                <select id="f_day" class="form-select form-select-sm" bind:value={formulario.day_of_week} required>
                                     <option value="" disabled>Seleccione día...</option>
                                     {#each diasSemana as dia}
                                         <option value={dia}>{dia}</option>
@@ -315,12 +343,12 @@
                                 </select>
                             </div>
 
-                            <!-- Bloque -->
                             <div class="col-12">
-                                <label class="form-label small fw-bold">BLOQUE HORARIO *</label>
-                                <input type="text" class="form-control form-control-sm"
+                                <label for="f_block" class="form-label small fw-bold">BLOQUE HORARIO *</label>
+                                <input type="text" id="f_block" class="form-control form-control-sm"
                                     bind:value={formulario.block_label}
                                     placeholder="Ej: 06:00 - 08:00" />
+                                <!-- Hint para usar el grid cuando hay disponibilidad cargada -->
                                 {#if disponibilidadDocente.size > 0}
                                     <small class="text-muted">
                                         <i class="bi bi-info-circle me-1"></i>
@@ -329,15 +357,14 @@
                                 {/if}
                             </div>
 
-                            <!-- Grupo -->
                             <div class="col-12">
-                                <label class="form-label small fw-bold">GRUPO</label>
-                                <input type="text" class="form-control form-control-sm"
+                                <label for="f_group" class="form-label small fw-bold">GRUPO</label>
+                                <input type="text" id="f_group" class="form-control form-control-sm"
                                     bind:value={formulario.group_code}
                                     placeholder="Ej: A, BN, AN" />
                             </div>
 
-                            <!-- Resumen -->
+                            <!-- Resumen del bloque seleccionado con advertencia si no está disponible -->
                             {#if formulario.day_of_week && formulario.block_label}
                                 <div class="col-12">
                                     <div class="p-2 rounded border border-primary-subtle bg-primary-subtle small">
@@ -362,6 +389,7 @@
                             <i class="bi bi-grid-3x3-gap me-1"></i>
                             Disponibilidad del Docente
                             {#if formulario.teacher_id && formulario.period_id}
+                                <!-- Muestra el nombre del docente seleccionado -->
                                 <span class="text-dark ms-1">
                                     — {docentes.find(d => d.id == formulario.teacher_id)?.first_name}
                                     {docentes.find(d => d.id == formulario.teacher_id)?.last_name}
@@ -370,17 +398,20 @@
                         </h6>
 
                         {#if !formulario.teacher_id || !formulario.period_id}
+                            <!-- Estado inicial: instrucción para seleccionar docente y periodo -->
                             <div class="d-flex flex-column align-items-center justify-content-center h-75 text-muted">
                                 <i class="bi bi-person-lines-fill fs-1 opacity-25 mb-3"></i>
                                 <p class="text-center">Selecciona un <strong>docente</strong> y un <strong>periodo</strong><br>para ver su disponibilidad registrada.</p>
                             </div>
 
                         {:else if cargandoDisponibilidad}
+                            <!-- Spinner mientras carga la disponibilidad del docente -->
                             <div class="d-flex align-items-center justify-content-center h-75 text-muted">
                                 <span class="spinner-border spinner-border-sm me-2"></span> Cargando disponibilidad...
                             </div>
 
                         {:else if disponibilidadDocente.size === 0}
+                            <!-- Alerta cuando el docente no tiene disponibilidad registrada -->
                             <div class="alert alert-warning border-0 d-flex align-items-center">
                                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
                                 <div>
@@ -390,16 +421,15 @@
                             </div>
 
                         {:else}
-                            <!-- Grid clicable: al hacer clic en un bloque disponible, lo rellena en el form -->
+                            <!-- Grid interactivo: clic en celda amarilla llena el formulario -->
                             <div class="grid-clickable">
-                                <AvailabilityGridReadOnly 
+                                <AvailabilityGridReadOnly
                                     disponibilidad={disponibilidadDocente}
                                     bloqueSeleccionado={bloqueEnForm}
                                     bloquesAsignados={bloquesAsignados}
                                     onBloqueClick={seleccionarBloque}
                                 />
                             </div>
-                            <!-- Overlay de clicks sobre el grid -->
                             <div class="mt-2 small text-muted">
                                 <i class="bi bi-hand-index me-1"></i>
                                 Haz clic en un bloque <span class="badge" style="background:#F3B105;color:#000;">Libre</span> para seleccionarlo automáticamente
@@ -410,7 +440,7 @@
                 </div>
             </div>
 
-            <!-- Footer -->
+            <!-- Footer con botones de acción -->
             <div class="modal-footer border-0 bg-light">
                 <button class="btn btn-outline-secondary btn-sm" onclick={() => modalAbierto = false}>
                     Cancelar
@@ -431,8 +461,8 @@
 </div>
 {/if}
 
-<ConfirmDeleteModal 
-    id="modalEliminar" 
-    itemName={`el horario de ${itemAEliminar}`} 
-    onDelete={eliminar} 
+<ConfirmDeleteModal
+    id="modalEliminar"
+    itemName={`el horario de ${itemAEliminar}`}
+    onDelete={eliminar}
 />

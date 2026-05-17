@@ -1,16 +1,29 @@
 <script lang="ts">
+    // ============================================================
+    // admi/dashboard/+page.svelte — Dashboard del Administrador
+    // ============================================================
+    // Página principal del administrador. Carga las métricas
+    // globales del sistema desde la API y las muestra en tarjetas
+    // a través del componente StatsGrid.
+    // Incluye accesos rápidos a configuración académica y periodos.
+    // ============================================================
     import { onMount } from 'svelte';
     import { userRole } from "$lib/stores/user";
     import StatsGrid from '$lib/components/StatsGrid.svelte';
     import LoadingSpinner from '$lib/components/LoadingSpinner.svelte';
 
+    // Valores iniciales en 0 para evitar errores antes de que cargue la API
     let stats = $state({
         usuarios: 0, facultades: 0, programas: 0,
         docentes: 0, materias: 0, horarios: 0
     });
     let cargando = $state(true);
-    let role = $derived($userRole);
+    let role = $derived($userRole); // Rol del usuario para filtrar las tarjetas en StatsGrid
 
+    // ------------------------------------------------------------
+    // Carga las métricas desde GET /stats/summary
+    // El token JWT se envía en el header de autorización
+    // ------------------------------------------------------------
     async function cargarDatos() {
         const token = localStorage.getItem('token');
         try {
@@ -31,20 +44,23 @@
 {#if cargando}
     <LoadingSpinner />
 {:else}
+    <!-- Grilla de tarjetas de métricas según el rol -->
     <StatsGrid {role} data={stats} />
 
+    <!-- Sección de accesos rápidos exclusiva del Administrador -->
     {#if role === 'admi'}
         <div class="row mt-4">
+            <!-- Acceso rápido a configuración académica -->
             <div class="col-md-6 mb-3">
                 <div class="card border-0 shadow-sm p-4 h-100">
                     <h5 class="fw-bold mb-3 text-primary">Configuración Académica</h5>
                     <p class="text-muted small">Define programas y materias de la Universidad CUL.</p>
                     <div class="d-flex gap-2">
-                        <!-- <a href="/admi/programas" class="btn btn-primary btn-sm">Programas</a> -->
                         <a href="/admi/materias" class="btn btn-outline-primary btn-sm">Materias</a>
                     </div>
                 </div>
             </div>
+            <!-- Indicador del periodo académico activo -->
             <div class="col-md-6 mb-3">
                 <div class="card border-0 shadow-sm p-4 h-100">
                     <h5 class="fw-bold mb-3 text-secondary">Control de Periodo</h5>

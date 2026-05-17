@@ -1,4 +1,14 @@
 <script lang="ts">
+    // ============================================================
+    // admi/horarios/+page.svelte — Gestión de Horarios
+    // ============================================================
+    // CRUD completo de horarios académicos para el Administrador.
+    // Es el módulo más complejo del sistema: carga 4 recursos
+    // en paralelo (horarios, docentes, materias, periodos) para
+    // poblar la tabla y los selects del formulario.
+    // Cada horario representa la asignación de una materia a un
+    // docente en un día, franja horaria y grupo específicos.
+    // ============================================================
     import { onMount } from 'svelte';
     import PageHeader from "$lib/components/PageHeader.svelte";
     import DataTable from "$lib/components/DataTable.svelte";
@@ -22,12 +32,8 @@
     const diasSemana = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 
     let formulario = $state({
-        teacher_id: "",
-        subject_id: "",
-        period_id: "",
-        day_of_week: "",
-        block_label: "",
-        group_code: "A"
+        teacher_id: "", subject_id: "", period_id: "",
+        day_of_week: "", block_label: "", group_code: "A"
     });
 
     const headers = [
@@ -43,6 +49,7 @@
         "Content-Type": "application/json"
     });
 
+    // Carga los 4 recursos en paralelo con Promise.all
     async function cargarDatos() {
         cargando = true;
         try {
@@ -66,43 +73,32 @@
     function prepararNuevo() {
         editando = false;
         idSeleccionado = null;
-        formulario = {
-            teacher_id: "", subject_id: "", period_id: "",
-            day_of_week: "", block_label: "", group_code: "A"
-        };
+        formulario = { teacher_id: "", subject_id: "", period_id: "", day_of_week: "", block_label: "", group_code: "A" };
     }
 
     function prepararEdicion(h: any) {
         editando = true;
         idSeleccionado = h.id;
         formulario = {
-            teacher_id: h.teacher_id,
-            subject_id: h.subject_id,
-            period_id: h.period_id,
-            day_of_week: h.day_of_week,
-            block_label: h.block_label,
+            teacher_id: h.teacher_id, subject_id: h.subject_id, period_id: h.period_id,
+            day_of_week: h.day_of_week, block_label: h.block_label,
             group_code: h.group_code || "A"
         };
     }
 
     async function guardar() {
-        const url = editando
-            ? `${API}/schedules/${idSeleccionado}`
-            : `${API}/schedules/`;
-
+        const url = editando ? `${API}/schedules/${idSeleccionado}` : `${API}/schedules/`;
         const res = await fetch(url, {
             method: editando ? "PUT" : "POST",
             headers: getHeaders(),
             body: JSON.stringify(formulario)
         });
-
         if (res.ok) await cargarDatos();
     }
 
     async function eliminar() {
         const res = await fetch(`${API}/schedules/${idSeleccionado}`, {
-            method: "DELETE",
-            headers: getHeaders()
+            method: "DELETE", headers: getHeaders()
         });
         if (res.ok) await cargarDatos();
     }
@@ -110,11 +106,11 @@
     onMount(cargarDatos);
 </script>
 
-<PageHeader 
-    title="Horarios Docentes" 
-    subtitle="Sistema de Gestión - Universidad CUL" 
-    buttonText="Nuevo Horario" 
-    onButtonClick={prepararNuevo} 
+<PageHeader
+    title="Horarios Docentes"
+    subtitle="Sistema de Gestión - Universidad CUL"
+    buttonText="Nuevo Horario"
+    onButtonClick={prepararNuevo}
 />
 
 {#if cargando}
@@ -134,6 +130,7 @@
                 </td>
                 <td class="fw-medium text-secondary">{h.teacher_name || 'N/A'}</td>
                 <td>
+                    <!-- subject_name y subject_code obtenidos por JOIN en la API -->
                     <div class="fw-semibold text-dark">{h.subject_name || 'N/A'}</div>
                     {#if h.subject_code}
                         <small class="text-muted">{h.subject_code}</small>
@@ -141,13 +138,10 @@
                 </td>
                 <td class="text-muted small">{h.period_name || 'N/A'}</td>
                 <td class="text-end pe-4">
-                    <TableAction 
+                    <TableAction
                         itemName={`Horario de ${h.subject_name || 'materia'}`}
                         onEdit={() => prepararEdicion(h)}
-                        onDelete={() => { 
-                            idSeleccionado = h.id; 
-                            itemAEliminar = `${h.subject_name} (${h.teacher_name})`; 
-                        }}
+                        onDelete={() => { idSeleccionado = h.id; itemAEliminar = `${h.subject_name} (${h.teacher_name})`; }}
                     />
                 </td>
             </tr>
@@ -166,7 +160,6 @@
                 {/each}
             </select>
         </div>
-
         <div class="col-md-6">
             <label for="subject_id" class="form-label small fw-bold text-muted">ASIGNATURA</label>
             <select id="subject_id" class="form-select" bind:value={formulario.subject_id} required>
@@ -176,7 +169,6 @@
                 {/each}
             </select>
         </div>
-
         <div class="col-md-6">
             <label for="period_id" class="form-label small fw-bold text-muted">PERIODO</label>
             <select id="period_id" class="form-select" bind:value={formulario.period_id} required>
@@ -186,7 +178,6 @@
                 {/each}
             </select>
         </div>
-
         <div class="col-md-4">
             <label for="day_of_week" class="form-label small fw-bold text-muted">DÍA</label>
             <select id="day_of_week" class="form-select" bind:value={formulario.day_of_week} required>
@@ -196,25 +187,21 @@
                 {/each}
             </select>
         </div>
-
         <div class="col-md-4">
             <label for="block_label" class="form-label small fw-bold text-muted">BLOQUE HORARIO</label>
             <input type="text" id="block_label" class="form-control"
-                   bind:value={formulario.block_label}
-                   placeholder="Ej: 07:00-09:00" required>
+                bind:value={formulario.block_label} placeholder="Ej: 07:00-09:00" required>
         </div>
-
         <div class="col-md-4">
             <label for="group_code" class="form-label small fw-bold text-muted">GRUPO</label>
             <input type="text" id="group_code" class="form-control"
-                   bind:value={formulario.group_code}
-                   placeholder="Ej: A, BN, AN" />
+                bind:value={formulario.group_code} placeholder="Ej: A, BN, AN" />
         </div>
     </div>
 </FormModal>
 
-<ConfirmDeleteModal 
-    id="modalEliminar" 
-    itemName={`el horario de ${itemAEliminar}`} 
-    onDelete={eliminar} 
+<ConfirmDeleteModal
+    id="modalEliminar"
+    itemName={`el horario de ${itemAEliminar}`}
+    onDelete={eliminar}
 />

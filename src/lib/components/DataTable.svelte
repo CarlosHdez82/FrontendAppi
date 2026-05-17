@@ -16,8 +16,8 @@
     let datosFiltrados = $derived(
         terminoBusqueda === '' 
             ? data 
-            : data.filter(item => 
-                Object.values(item).some(val => 
+            : data.filter((item: any) => 
+                Object.values(item).some((val: any) => 
                     String(val).toLowerCase().includes(terminoBusqueda.toLowerCase())
                 )
             )
