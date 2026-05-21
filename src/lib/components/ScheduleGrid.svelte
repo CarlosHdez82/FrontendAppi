@@ -48,7 +48,14 @@
 </script>
 
 <!-- ===== VISTA ESCRITORIO: tabla completa (oculta en móvil) ===== -->
-<div class="d-none d-md-block table-responsive shadow-sm rounded-3 border overflow-hidden">
+<!--
+    Dos divs separados para resolver el conflicto entre scroll y esquinas redondeadas:
+    - Externo: aplica el borde, sombra y overflow:hidden para recortar las esquinas
+    - Interno: table-responsive agrega overflow-x:auto para el scroll horizontal
+    Si ambas clases estuvieran en el mismo div, overflow-hidden cancelaría el scroll.
+-->
+<div class="d-none d-md-block shadow-sm rounded-3 border" style="overflow: hidden;">
+    <div class="table-responsive">
     <table class="table table-bordered align-middle mb-0 text-center">
         <thead class="table-dark">
             <tr>
@@ -91,6 +98,7 @@
             {/each}
         </tbody>
     </table>
+    </div>
 </div>
 
 <!-- ===== VISTA MÓVIL: tarjetas agrupadas por día (oculta en escritorio) ===== -->

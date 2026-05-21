@@ -27,6 +27,12 @@
     let disponibilidadSeleccionada = $state(new Set<string>());
     // Array derivado del Set para enviar a la API
     let listaParaEnviar = $derived(Array.from(disponibilidadSeleccionada));
+    // Bloques que ya tienen horario asignado por el coordinador
+    let bloquesAsignados = $state(new Set<string>());
+    // Bloques disponibles sin clase asignada (los amarillos del grid)
+    let disponiblesLibres = $derived(
+        [...disponibilidadSeleccionada].filter(b => !bloquesAsignados.has(b)).length
+    );
 
     let periodos = $state<any[]>([]);
     let periodoSeleccionado = $state<number | null>(null);
@@ -63,13 +69,25 @@
         if (!periodoSeleccionado || !teacherId()) return;
         cargando = true;
         try {
-            const res = await fetch(
-                `${API}/availability/teacher/${teacherId()}/${periodoSeleccionado}`,
-                { headers: getHeaders() }
-            );
-            if (res.ok) {
-                const data = await res.json();
+            const [resDisp, resHorarios] = await Promise.all([
+                fetch(`${API}/availability/teacher/${teacherId()}/${periodoSeleccionado}`, { headers: getHeaders() }),
+                fetch(`${API}/schedules/`, { headers: getHeaders() })
+            ]);
+
+            if (resDisp.ok) {
+                const data = await resDisp.json();
                 disponibilidadSeleccionada = new Set(data.map((d: any) => `${d.day}-${d.block}`));
+            }
+
+            if (resHorarios.ok) {
+                const horarios = await resHorarios.json();
+                const tid = Number(teacherId());
+                const pid = periodoSeleccionado;
+                bloquesAsignados = new Set(
+                    horarios
+                        .filter((h: any) => h.teacher_id === tid && h.period_id === pid)
+                        .map((h: any) => `${h.day_of_week}-${h.block_label}`)
+                );
             }
         } catch (e) {
             console.error("Error cargando disponibilidad:", e);
@@ -140,9 +158,10 @@
         }
     }
 
-    // Limpia la selección del grid sin afectar la BD
+    // Limpia la selección del grid sin afectar la BD.
+    // Los bloques con clase asignada no se pueden quitar.
     async function limpiarSeleccion() {
-        disponibilidadSeleccionada = new Set();
+        disponibilidadSeleccionada = new Set(bloquesAsignados);
         mensaje = null;
     }
 
@@ -200,9 +219,25 @@
     {/if}
 
     <!-- Instrucciones de uso del grid interactivo -->
-    <div class="alert alert-info border-0 shadow-sm mb-3 py-2 d-flex align-items-center" role="alert">
+    <div class="alert alert-info border-0 shadow-sm mb-2 py-2 d-flex align-items-center" role="alert">
         <i class="bi bi-info-circle-fill fs-5 me-2 text-primary"></i>
         <small><strong>Instrucciones:</strong> Haz clic en una celda para seleccionarla o <strong>mantén presionado y arrastra</strong> para marcar múltiples bloques.</small>
+    </div>
+
+    <!-- Leyenda de colores -->
+    <div class="d-flex gap-3 flex-wrap mb-3">
+        <span class="d-flex align-items-center gap-1 small">
+            <span class="d-inline-block rounded" style="width:16px;height:16px;background:#F3B105;border:1px solid #d99e04;"></span>
+            Disponible
+        </span>
+        <span class="d-flex align-items-center gap-1 small">
+            <span class="d-inline-block rounded" style="width:16px;height:16px;background:#198754;border:1px solid #146c43;"></span>
+            Con clase asignada
+        </span>
+        <span class="d-flex align-items-center gap-1 small">
+            <span class="d-inline-block rounded" style="width:16px;height:16px;background:#ffffff;border:1px solid #dee2e6;"></span>
+            No disponible
+        </span>
     </div>
 
     <!-- Grid interactivo de disponibilidad -->
@@ -210,19 +245,26 @@
         <LoadingSpinner />
     {:else}
         <div class="flex-grow-1 overflow-hidden">
-            <!-- bind:seleccion sincroniza el Set bidireccionalmentecon el componente grid -->
-            <AvailabilityGrid bind:seleccion={disponibilidadSeleccionada} />
+            <AvailabilityGrid bind:seleccion={disponibilidadSeleccionada} {bloquesAsignados} />
         </div>
     {/if}
 
     <!-- Resumen de bloques seleccionados y horas totales -->
     <div class="mt-3 p-3 bg-white border-top shadow-sm rounded-top d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-            <span class="text-muted me-2 small">Bloques seleccionados:</span>
-            <span class="badge bg-dark">{disponibilidadSeleccionada.size}</span>
-            <span class="text-muted ms-3 me-2 small">Total de horas:</span>
-            <!-- Cada bloque equivale a 2 horas según el modelo de la CUL -->
-            <span class="badge" style="background-color: #222F56;">{disponibilidadSeleccionada.size * 2} hrs</span>
+        <div class="d-flex flex-wrap gap-3 align-items-center">
+            <span class="small">
+                <span class="text-muted me-1">Disponibles:</span>
+                <span class="badge" style="background-color: #F3B105; color: #000;">{disponiblesLibres}</span>
+            </span>
+            <span class="small">
+                <span class="text-muted me-1">Con clase asignada:</span>
+                <span class="badge bg-success">{bloquesAsignados.size}</span>
+            </span>
+            <span class="small">
+                <span class="text-muted me-1">Horas disponibles:</span>
+                <!-- Cada bloque equivale a 2 horas según el modelo de la CUL -->
+                <span class="badge" style="background-color: #222F56;">{disponiblesLibres * 2} hrs</span>
+            </span>
         </div>
         <div class="text-muted small">Zona horaria: Colombia (UTC-5)</div>
     </div>

@@ -21,14 +21,66 @@
 
     async function cargarDatos() {
         const token = localStorage.getItem('token');
+        const tid = Number(localStorage.getItem('user_id'));
+        const headers = { "Authorization": `Bearer ${token}` };
         try {
-            const res = await fetch(`${API}/stats/summary`, {
-                headers: { "Authorization": `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
+            // Paso 1: stats generales + periodos en paralelo
+            const [resStats, resPeriodos] = await Promise.all([
+                fetch(`${API}/stats/summary`, { headers }),
+                fetch(`${API}/academic-periods/`, { headers })
+            ]);
+
+            if (resStats.ok) {
+                const data = await resStats.json();
                 stats = data;
                 periodoActivo = data.periodo_actual ?? null;
+            }
+
+            // Obtener el ID del periodo activo para los endpoints de docente
+            let periodoActivoId: number | null = null;
+            if (resPeriodos.ok) {
+                const periodos = await resPeriodos.json();
+                const activo = periodos.find((p: any) => p.is_active);
+                if (activo) periodoActivoId = activo.id;
+            }
+
+            // Paso 2: disponibilidad + horarios del docente en paralelo
+            // Solo si hay periodo activo e ID de docente válidos
+            if (periodoActivoId && tid) {
+                const [resDisp, resHorarios] = await Promise.all([
+                    fetch(`${API}/availability/teacher/${tid}/${periodoActivoId}`, { headers }),
+                    fetch(`${API}/schedules/`, { headers })
+                ]);
+
+                let disponibilidad = new Set<string>();
+                let asignados = new Set<string>();
+
+                if (resDisp.ok) {
+                    const data = await resDisp.json();
+                    disponibilidad = new Set(data.map((d: any) => `${d.day}-${d.block}`));
+                }
+
+                let horasAsignadas = 0;
+                let materiasUnicas = 0;
+
+                if (resHorarios.ok) {
+                    const horarios = await resHorarios.json();
+                    const misHorarios = horarios.filter(
+                        (h: any) => h.teacher_id === tid && h.period_id === periodoActivoId
+                    );
+
+                    asignados = new Set(misHorarios.map((h: any) => `${h.day_of_week}-${h.block_label}`));
+
+                    // Cada bloque equivale a 2 horas según el modelo de la CUL
+                    horasAsignadas = misHorarios.length * 2;
+
+                    // Materias únicas por subject_id (un docente puede tener varios grupos de la misma materia)
+                    materiasUnicas = new Set(misHorarios.map((h: any) => h.subject_id)).size;
+                }
+
+                // Bloques disponibles sin clase asignada (equivale a los amarillos del grid)
+                const libres = [...disponibilidad].filter(b => !asignados.has(b)).length;
+                stats = { ...stats, disponibilidades: libres, horarios: horasAsignadas, materias: materiasUnicas };
             }
         } catch (error) {
             console.error("Error:", error);

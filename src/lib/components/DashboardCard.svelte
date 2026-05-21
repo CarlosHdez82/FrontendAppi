@@ -7,11 +7,12 @@
     // El color se aplica a través de las clases utilitarias de
     // Bootstrap (ej: "primary", "success", "warning").
     // ============================================================
-    let { title, value, icon, color, link, linkText } = $props();
+    // colClass: clases Bootstrap de columna. El padre define cuántas tarjetas caben por fila
+    // según el número total de tarjetas del rol. Por defecto: 2 por fila en md, 4 en lg.
+    let { title, value, icon, color, link, linkText, colClass = 'col-12 col-sm-6 col-lg-3' } = $props();
 </script>
 
-<!-- col-lg-3: 4 tarjetas por fila en pantallas grandes -->
-<div class="col-12 col-md-6 col-lg-3">
+<div class="{colClass}">
     <!-- border-start con color dinámico como indicador visual -->
     <div class="card border-0 shadow-sm border-start border-{color} border-4 h-100">
         <div class="card-body d-flex justify-content-between align-items-center">
