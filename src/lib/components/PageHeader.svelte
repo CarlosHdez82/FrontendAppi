@@ -7,7 +7,12 @@
     // El botón abre el modal Bootstrap con id="modalPrincipal".
     // Si buttonText está vacío, el botón no se renderiza.
     // ============================================================
-    let { title, subtitle, buttonText, onButtonClick } = $props();
+    let { title, subtitle, buttonText = '', onButtonClick = (_e: MouseEvent) => {} } = $props<{
+        title: string;
+        subtitle: string;
+        buttonText?: string;
+        onButtonClick?: (e: MouseEvent) => void;
+    }>();
 </script>
 
 <div class="d-flex justify-content-between align-items-center mb-4">

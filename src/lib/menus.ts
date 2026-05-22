@@ -48,7 +48,8 @@ export const menus: Menus = {
     { icon: "bi bi-book",          label: "Materias",       href: "/admi/materias" },
     { icon: "bi bi-calendar",      label: "Periodos",       href: "/admi/periodos" },
     { icon: "bi bi-clock",         label: "Disponibilidad", href: "/admi/disponibilidad" },
-    { icon: "bi bi-calendar-week", label: "Horarios",       href: "/admi/horarios" }
+    { icon: "bi bi-calendar-week", label: "Horarios",       href: "/admi/horarios" },
+    { icon: "bi bi-bar-chart-fill", label: "Reportes",      href: "/admi/reportes" }
   ],
 
   // Coordinador — gestión académica, sin acceso a configuración
