@@ -119,9 +119,87 @@
         await cargarPeriodos();
     });
 
-    // Imprime el horario usando el diálogo de impresión del navegador
+    // Genera una ventana nueva limpia con solo el horario y la imprime.
+    // Este enfoque es 100% confiable en producción porque no depende
+    // de CSS de clases del framework — construye el HTML desde cero.
     function imprimirHorario() {
-        window.print();
+        const dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        const bloques = [
+            '06:00 - 08:00', '08:00 - 10:00', '10:00 - 12:00',
+            '14:00 - 16:00', '16:00 - 18:00', '18:00 - 20:00', '20:00 - 22:00'
+        ];
+
+        // Construye las filas de la tabla con los datos del horario
+        const filas = bloques.map(bloque => {
+            const celdas = dias.map(dia => {
+                const clase = horarioAsignado[`${dia}-${bloque}`];
+                if (clase) {
+                    return `<td style="padding:4px;text-align:center;vertical-align:middle;border:1px solid #dee2e6;">
+                        <div style="background-color:${clase.color};border-radius:6px;padding:6px 4px;color:white;-webkit-print-color-adjust:exact;print-color-adjust:exact;">
+                            <strong style="font-size:0.72rem;display:block;line-height:1.2;">${clase.materia}</strong>
+                            <span style="font-size:0.62rem;background:white;color:#333;border-radius:3px;padding:1px 5px;margin-top:4px;display:inline-block;">Grupo: ${clase.grupo}</span>
+                        </div>
+                    </td>`;
+                }
+                return `<td style="text-align:center;color:#ccc;border:1px solid #dee2e6;">—</td>`;
+            }).join('');
+
+            return `<tr>
+                <td style="padding:8px;font-weight:600;font-size:0.75rem;color:#555;white-space:nowrap;border:1px solid #dee2e6;background:#f8f9fa;">${bloque}</td>
+                ${celdas}
+            </tr>`;
+        }).join('');
+
+        // HTML completo de la ventana de impresión
+        const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>Horario — ${$userName}</title>
+    <style>
+        @page { size: A4 landscape; margin: 1cm; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        .encabezado { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 3px solid #222F56; }
+        .encabezado h2 { margin: 0 0 2px; color: #222F56; font-size: 1.3rem; }
+        .encabezado p  { margin: 0; color: #666; font-size: 0.85rem; }
+        .encabezado .docente { margin-top: 6px; font-size: 0.95rem; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        th { background-color: #222F56 !important; color: white; padding: 8px 4px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; text-align: center; border: 1px solid #1a2540; }
+        th:first-child { width: 110px; background-color: #F3B105 !important; color: #222F56; }
+    </style>
+</head>
+<body>
+    <div class="encabezado">
+        <div>
+            <h2>Mi Horario de Clases</h2>
+            <p>Universidad CUL — Horario oficial asignado por coordinación</p>
+            <p class="docente"><strong>Docente:</strong> ${$userName}</p>
+        </div>
+        <img src="${window.location.origin}/logo.png" alt="Logo CUL" style="height:55px;">
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Bloque</th>
+                ${dias.map(d => `<th>${d}</th>`).join('')}
+            </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+    </table>
+    <script>
+        window.onload = function() {
+            setTimeout(function() { window.print(); window.close(); }, 400);
+        };
+    <\/script>
+</body>
+</html>`;
+
+        const ventana = window.open('', '_blank', 'width=1200,height=800');
+        if (ventana) {
+            ventana.document.write(html);
+            ventana.document.close();
+        }
     }
 </script>
 
