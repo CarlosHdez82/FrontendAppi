@@ -53,8 +53,9 @@
     - Externo: aplica el borde, sombra y overflow:hidden para recortar las esquinas
     - Interno: table-responsive agrega overflow-x:auto para el scroll horizontal
     Si ambas clases estuvieran en el mismo div, overflow-hidden cancelaría el scroll.
+    La clase 'vista-tabla' permite apuntar este div desde el CSS de impresión.
 -->
-<div class="d-none d-md-block shadow-sm rounded-3 border" style="overflow: hidden;">
+<div class="vista-tabla d-none d-md-block shadow-sm rounded-3 border" style="overflow: hidden;">
     <div class="table-responsive">
     <table class="table table-bordered align-middle mb-0 text-center">
         <thead class="table-dark">
@@ -102,7 +103,7 @@
 </div>
 
 <!-- ===== VISTA MÓVIL: tarjetas agrupadas por día (oculta en escritorio) ===== -->
-<div class="d-md-none">
+<div class="vista-tarjetas d-md-none">
     {#if horarioPorDia.length === 0}
         <!-- Estado vacío: no hay clases asignadas -->
         <div class="text-center text-muted py-4">
@@ -172,5 +173,49 @@
     .h-100:hover {
         filter: brightness(1.1);
         transform: scale(1.02);
+    }
+
+    /* ===== ESTILOS DE IMPRESIÓN ===== */
+    @media print {
+        /* Muestra la tabla y oculta las tarjetas móviles */
+        .vista-tabla {
+            display: block !important;
+            overflow: visible !important;
+            border: 1px solid #dee2e6 !important;
+            box-shadow: none !important;
+            width: 100% !important;
+        }
+
+        .vista-tarjetas { display: none !important; }
+
+        /* Tabla ajustada al ancho completo de la página landscape */
+        table {
+            min-width: unset !important;
+            width: 100% !important;
+            font-size: 0.65rem !important;
+            border-collapse: collapse !important;
+            table-layout: fixed !important;
+        }
+
+        /* Encabezados compactos */
+        th {
+            padding: 0.35rem 0.2rem !important;
+            font-size: 0.65rem !important;
+            letter-spacing: 0 !important;
+        }
+
+        /* Celdas compactas con altura automática */
+        td {
+            height: auto !important;
+            min-width: unset !important;
+            padding: 0.25rem !important;
+        }
+
+        /* Elimina sombras y efectos hover */
+        .shadow-sm { box-shadow: none !important; }
+        .h-100:hover { transform: none !important; filter: none !important; }
+
+        /* Fuerza impresión de colores de fondo de las materias */
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
     }
 </style>
