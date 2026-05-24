@@ -15,6 +15,7 @@
     // @ts-ignore suprime el error de TypeScript por la importación dinámica.
     // ============================================================
     import { onMount } from 'svelte';
+    import '../app.css'; // Estilos globales (incluye CSS de impresión)
     let { children } = $props();
 
     onMount(async () => {

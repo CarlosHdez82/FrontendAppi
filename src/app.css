@@ -1,0 +1,47 @@
+/* ============================================================
+   app.css — Estilos globales de la aplicación
+   Universidad CUL — Gestión de Horarios
+   ============================================================ */
+
+/* ── Estilos de impresión del horario docente ───────────────
+   Se definen aquí (CSS global) para garantizar que funcionen
+   igual en desarrollo y en producción. Los :global() dentro
+   de componentes Svelte no son confiables en builds de prod.
+   ──────────────────────────────────────────────────────────── */
+@media print {
+    /* Página en horizontal para que quepan los 6 días */
+    @page { size: A4 landscape; margin: 1cm; }
+
+    /* Oculta toda la UI: sidebar, header, botones, alertas */
+    .sidebar-custom,
+    .header-custom,
+    nav,
+    header,
+    .mobile-sidebar,
+    .offcanvas,
+    .btn,
+    .alert,
+    select,
+    .no-print { display: none !important; }
+
+    /* El contenido ocupa todo el alto y ancho sin desborde */
+    body, html {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Elimina el padding del contenedor principal */
+    .container-fluid { padding: 0 !important; }
+
+    /* Permite que el contenido fluya sin restricciones de altura */
+    .vh-100, .flex-grow-1, .overflow-hidden {
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    /* Fuerza impresión de colores de fondo (materias del horario) */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}

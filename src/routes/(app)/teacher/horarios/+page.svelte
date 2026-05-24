@@ -193,35 +193,10 @@
 </div>
 
 <style>
-    /* El encabezado de impresión está oculto en pantalla normal */
+    /* Oculto en pantalla, visible solo al imprimir (controlado desde app.css global) */
     .encabezado-impresion { display: none; }
 
     @media print {
-        /* Imprime en horizontal para que quepan los 6 días */
-        @page { size: A4 landscape; margin: 1cm; }
-
-        /* Muestra el encabezado con nombre del docente al imprimir */
         .encabezado-impresion { display: block !important; }
-
-        /* Oculta toda la UI: sidebar, header, botones, alertas, selector */
-        :global(.sidebar-custom),
-        :global(.header-custom),
-        :global(.mobile-sidebar),
-        :global(nav),
-        :global(header),
-        .btn, .alert, select,
-        .d-flex.gap-2 { display: none !important; }
-
-        /* El contenido ocupa todo el ancho sin padding */
-        :global(body), :global(#app), :global(.vh-100),
-        :global(.flex-grow-1), :global(.d-flex) {
-            height: auto !important;
-            overflow: visible !important;
-        }
-
-        .container-fluid { padding: 0 !important; }
-
-        /* Solo muestra el título y el grid */
-        h2, p { margin-bottom: 0.3rem !important; }
     }
 </style>
